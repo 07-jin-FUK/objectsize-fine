@@ -7,10 +7,11 @@ const ImageUploader = () => {
   const [points, setPoints] = useState([]);
   const [scale, setScale] = useState(null);
   const [message, setMessage] = useState(
-    "参考定規の1点目をクリックしてください。"
+    "基準を設定します。基準となる物の片方の端をクリックしてください。"
   );
   const [measurements, setMeasurements] = useState([]); // 複数の計測結果を保持
   const [result, setResult] = useState(null); // 計測結果を保持
+  const [selectedScale, setSelectedScale] = useState(null); // 選択された基準スケール
   const imageRef = useRef(null); // 画像要素への参照
 
   const onDrop = useCallback((acceptedFiles) => {
@@ -36,13 +37,13 @@ const ImageUploader = () => {
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
 
-    if (scale === null) {
-      // 基準スケールが設定されていない場合の処理
+    if (scale === null && selectedScale !== null) {
+      // 基準スケールが選択されている場合にのみ進行
       if (points.length < 2) {
         setPoints([...points, { x, y }]);
 
         if (points.length === 0) {
-          setMessage("次に参考定規の2点目をクリックしてください。");
+          setMessage("次にもう片方の端をクリックしてください。");
         } else if (points.length === 1) {
           const dx = x - points[0].x;
           const dy = y - points[0].y;
@@ -54,25 +55,21 @@ const ImageUploader = () => {
           ]);
 
           setTimeout(() => {
-            const scaleLength = prompt(
-              "定規の長さ（実際の寸法）を入力してください（例：10 cm）:"
+            const scaleLength = selectedScale; // 選択された基準スケールを使用
+            setScale(distance / parseFloat(scaleLength));
+            setMessage(
+              "基準値を認識しました。次に計測したい片方の端をクリックしてください。"
             );
-            if (scaleLength) {
-              setScale(distance / parseFloat(scaleLength));
-              setMessage(
-                "基準スケールが設定されました。次に計測したい2点をクリックしてください。"
-              );
-              setPoints([]); // ポイントをリセットして次の計測に備える
-              setMeasurements([]); // 線をリセット
-            }
-          }, 100); // 少し待ってからポップアップを表示
+            setPoints([]); // ポイントをリセットして次の計測に備える
+            setMeasurements([]); // 線をリセット
+          }, 100); // 少し待ってから処理を進める
         }
       }
-    } else {
+    } else if (scale !== null) {
       // 基準スケールが設定されている場合の計測処理
       if (points.length === 0) {
         setPoints([{ x, y }]);
-        setMessage("次の点をクリックして計測を完了してください。");
+        setMessage("もう片方の端をクリックして計測を完了してください。");
       } else {
         const dx = x - points[0].x;
         const dy = y - points[0].y;
@@ -80,7 +77,7 @@ const ImageUploader = () => {
         const realDistance = (distance / scale).toFixed(2);
 
         // 計測結果を表示
-        setResult(`計測結果: ${realDistance} 単位`);
+        setResult(`計測結果: ${realDistance} cm`);
 
         setMeasurements([
           ...measurements,
@@ -95,13 +92,22 @@ const ImageUploader = () => {
         setMessage("計測が完了しました。次の2点をクリックして再計測できます。");
         setPoints([]); // ポイントをリセットして次の計測に備える
       }
+    } else {
+      setMessage("最初に基準スケールを選択してください。");
     }
   };
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({ onDrop });
 
+  const handleScaleChange = (e) => {
+    setSelectedScale(e.target.value);
+    setMessage(
+      `基準スケール: ${e.target.value} cmが選択されました。<br>画像内の基準の片方の端をクリックしてください。`
+    );
+  };
+
   return (
-    <div>
+    <div style={styles.container}>
       <div {...getRootProps()} style={styles.dropzone}>
         <input {...getInputProps()} />
         {isDragActive ? (
@@ -109,6 +115,26 @@ const ImageUploader = () => {
         ) : (
           <p>画像をドラッグ＆ドロップするか、クリックして選択</p>
         )}
+      </div>
+      <div style={styles.scaleSelector}>
+        <label>
+          <input
+            type="radio"
+            name="scale"
+            value="10"
+            onChange={handleScaleChange}
+          />
+          定規（10cm）
+        </label>
+        <label>
+          <input
+            type="radio"
+            name="scale"
+            value="15.5"
+            onChange={handleScaleChange}
+          />
+          1000円札（15.5cm）
+        </label>
       </div>
       {preview && (
         <div style={styles.previewContainer}>
@@ -148,7 +174,7 @@ const ImageUploader = () => {
                     fontSize="14"
                     fontWeight="bold"
                   >
-                    {measurement.distance} 単位
+                    {measurement.distance} cm
                   </text>
                 )}
               </svg>
@@ -159,7 +185,7 @@ const ImageUploader = () => {
           </p>
           <p style={styles.message}>{message}</p>
           {scale && (
-            <p>基準スケール設定完了: 1ピクセル = {scale.toFixed(2)} 単位</p>
+            <p>基準スケール設定完了: 1ピクセル = {scale.toFixed(2)} cm</p>
           )}
           {result && <p style={styles.result}>{result}</p>}
         </div>
@@ -167,8 +193,16 @@ const ImageUploader = () => {
     </div>
   );
 };
-
 const styles = {
+  container: {
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    justifyContent: "center",
+    textAlign: "center",
+    minHeight: "100vh",
+    width: "100%", // 幅を100%に設定して、中央揃えにする
+  },
   dropzone: {
     border: "2px dashed #cccccc",
     borderRadius: "4px",
@@ -176,9 +210,19 @@ const styles = {
     textAlign: "center",
     cursor: "pointer",
     marginBottom: "20px",
+    width: "80%",
+    maxWidth: "1000px", // 最大幅を設定して中央揃えを維持
+  },
+  scaleSelector: {
+    marginBottom: "20px",
+    display: "flex",
+    justifyContent: "center",
+    gap: "20px",
   },
   previewContainer: {
     textAlign: "center",
+    width: "100%", // 全体を中央に揃えるため幅を100%に設定
+    maxWidth: "1000px", // 最大幅を設定して中央揃えを維持
   },
   imageContainer: {
     position: "relative",
@@ -207,6 +251,8 @@ const styles = {
   message: {
     fontWeight: "bold",
     color: "blue",
+    maxWidth: "80%",
+    margin: "auto",
   },
   result: {
     fontWeight: "bold",
