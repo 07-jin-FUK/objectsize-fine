@@ -1,7 +1,7 @@
 import React from "react";
-import ImageUploader from "./ImageUploader";
-import Instructions from "./Instructions";
-import Title from "./Title"; // タイトルコンポーネントをインポート
+import ImageUploader from "./components/Uploader/ImageUploader";
+import Instructions from "./components/Instructions/Instructions";
+import Title from "./components/Common/Title"; // タイトルコンポーネントをインポート
 
 function App() {
   return (
