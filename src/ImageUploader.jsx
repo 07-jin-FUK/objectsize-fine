@@ -1,5 +1,33 @@
 import React, { useCallback, useState, useRef, useEffect } from "react";
 import { useDropzone } from "react-dropzone";
+import CategorySelector from "./CategorySelector";
+import SubCategorySelector from "./SubCategorySelector";
+import CustomSizeInput from "./CustomSizeInput";
+
+const categories = {
+  定規: ["10cm（標準）", "20cm（標準）"],
+  紙幣: [
+    "1000円札（15.5cm x 7.6cm）",
+    "5000円札（15.6cm x 7.6cm）",
+    "1万円札（16cm x 7.6cm）",
+  ],
+  硬貨: [
+    "1円硬貨（直径2.0cm）",
+    "5円硬貨（直径2.1cm）",
+    "10円硬貨（直径2.3cm）",
+    "50円硬貨/100円硬貨（直径2.5cm）",
+    "500円硬貨（直径2.65cm）",
+  ],
+  カード類: [
+    "クレジットカード/ICカード（8.56cm x 5.4cm）",
+    "名刺（9.1cm x 5.5cm）",
+  ],
+  タバコの箱: [
+    "タバコの箱（5.4cm x 8.6cm x 2.2cm）",
+    "ライター（7.4cm x 2.5cm x 1.2cm）",
+  ],
+  その他: [], // カスタムサイズ用
+};
 
 const ImageUploader = () => {
   const [preview, setPreview] = useState(null);
@@ -9,20 +37,23 @@ const ImageUploader = () => {
   const [message, setMessage] = useState(
     "基準を設定します。基準となる物の片方の端をクリックしてください。"
   );
-  const [measurements, setMeasurements] = useState([]); // 複数の計測結果を保持
-  const [result, setResult] = useState(null); // 計測結果を保持
-  const [selectedScale, setSelectedScale] = useState(null); // 選択された基準スケール
-  const imageRef = useRef(null); // 画像要素への参照
+  const [measurements, setMeasurements] = useState([]);
+  const [result, setResult] = useState(null);
+  const [selectedCategory, setSelectedCategory] = useState(null);
+  const [selectedSubCategory, setSelectedSubCategory] = useState(null);
+  const [customSize, setCustomSize] = useState("");
+
+  const imageRef = useRef(null);
 
   const onDrop = useCallback((acceptedFiles) => {
     const file = acceptedFiles[0];
     const reader = new FileReader();
 
     reader.onload = () => {
-      setPreview(reader.result); // 画像プレビュー用のURLを設定
+      setPreview(reader.result);
     };
 
-    reader.readAsDataURL(file); // ファイルをData URLに変換
+    reader.readAsDataURL(file);
   }, []);
 
   useEffect(() => {
@@ -30,15 +61,14 @@ const ImageUploader = () => {
       const img = imageRef.current;
       setDimensions({ width: img.width, height: img.height });
     }
-  }, [preview]); // 画像プレビューが設定された後に位置を取得
+  }, [preview]);
 
   const handleImageClick = (e) => {
     const rect = imageRef.current.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
 
-    if (scale === null && selectedScale !== null) {
-      // 基準スケールが選択されている場合にのみ進行
+    if (scale === null && (selectedSubCategory || customSize)) {
       if (points.length < 2) {
         setPoints([...points, { x, y }]);
 
@@ -49,24 +79,24 @@ const ImageUploader = () => {
           const dy = y - points[0].y;
           const distance = Math.sqrt(dx * dx + dy * dy);
 
-          // 一時的に線を描画
           setMeasurements([
             { x1: points[0].x, y1: points[0].y, x2: x, y2: y, distance: "" },
           ]);
 
           setTimeout(() => {
-            const scaleLength = selectedScale; // 選択された基準スケールを使用
+            const scaleLength = selectedSubCategory
+              ? selectedSubCategory.match(/\d+(\.\d+)?/g)[0]
+              : customSize;
             setScale(distance / parseFloat(scaleLength));
             setMessage(
               "基準値を認識しました。次に計測したい片方の端をクリックしてください。"
             );
-            setPoints([]); // ポイントをリセットして次の計測に備える
-            setMeasurements([]); // 線をリセット
-          }, 100); // 少し待ってから処理を進める
+            setPoints([]);
+            setMeasurements([]);
+          }, 100);
         }
       }
     } else if (scale !== null) {
-      // 基準スケールが設定されている場合の計測処理
       if (points.length === 0) {
         setPoints([{ x, y }]);
         setMessage("もう片方の端をクリックして計測を完了してください。");
@@ -76,7 +106,6 @@ const ImageUploader = () => {
         const distance = Math.sqrt(dx * dx + dy * dy);
         const realDistance = (distance / scale).toFixed(2);
 
-        // 計測結果を表示
         setResult(`計測結果: ${realDistance} cm`);
 
         setMeasurements([
@@ -90,24 +119,50 @@ const ImageUploader = () => {
           },
         ]);
         setMessage("計測が完了しました。次の2点をクリックして再計測できます。");
-        setPoints([]); // ポイントをリセットして次の計測に備える
+        setPoints([]);
       }
     } else {
       setMessage("最初に基準スケールを選択してください。");
     }
   };
 
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({ onDrop });
-
-  const handleScaleChange = (e) => {
-    setSelectedScale(e.target.value);
-    setMessage(
-      `基準スケール: ${e.target.value} cmが選択されました。<br>画像内の基準の片方の端をクリックしてください。`
-    );
+  const handleCustomSizeChange = (size) => {
+    const validSize = size > 0 ? size : "";
+    setCustomSize(validSize);
+    setSelectedSubCategory(`入力サイズ ${validSize} cm`);
   };
+
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({ onDrop });
 
   return (
     <div style={styles.container}>
+      {selectedSubCategory && (
+        <p style={styles.selectedItem}>比較対象: {selectedSubCategory}</p>
+      )}
+
+      <CategorySelector
+        onCategorySelect={setSelectedCategory}
+        selectedCategory={selectedCategory}
+      />
+
+      {selectedCategory &&
+        selectedCategory !== "その他" &&
+        categories[selectedCategory] && (
+          <SubCategorySelector
+            category={selectedCategory}
+            onSubCategorySelect={setSelectedSubCategory}
+            selectedSubCategory={selectedSubCategory}
+            categories={categories}
+          />
+        )}
+
+      {selectedCategory === "その他" && (
+        <CustomSizeInput
+          customSize={customSize}
+          onCustomSizeChange={handleCustomSizeChange}
+        />
+      )}
+
       <div {...getRootProps()} style={styles.dropzone}>
         <input {...getInputProps()} />
         {isDragActive ? (
@@ -116,29 +171,15 @@ const ImageUploader = () => {
           <p>画像をドラッグ＆ドロップするか、クリックして選択</p>
         )}
       </div>
-      <div style={styles.scaleSelector}>
-        <label>
-          <input
-            type="radio"
-            name="scale"
-            value="10"
-            onChange={handleScaleChange}
-          />
-          定規（10cm）
-        </label>
-        <label>
-          <input
-            type="radio"
-            name="scale"
-            value="15.5"
-            onChange={handleScaleChange}
-          />
-          1000円札（15.5cm）
-        </label>
-      </div>
+
       {preview && (
         <div style={styles.previewContainer}>
-          <p>プレビュー:</p>
+          <p style={styles.message}>{message}</p>
+          {scale && (
+            <p>基準スケール設定完了: 1ピクセル = {scale.toFixed(2)} cm</p>
+          )}
+          {result && <p style={styles.result}>{result}</p>}
+          <p>選択中の画像:</p>
           <div style={styles.imageContainer}>
             <img
               ref={imageRef}
@@ -183,25 +224,27 @@ const ImageUploader = () => {
           <p>
             画像サイズ: {dimensions.width} x {dimensions.height} ピクセル
           </p>
-          <p style={styles.message}>{message}</p>
-          {scale && (
-            <p>基準スケール設定完了: 1ピクセル = {scale.toFixed(2)} cm</p>
-          )}
-          {result && <p style={styles.result}>{result}</p>}
         </div>
       )}
     </div>
   );
 };
+
 const styles = {
   container: {
     display: "flex",
     flexDirection: "column",
     alignItems: "center",
-    justifyContent: "center",
+    justifyContent: "flex-start",
     textAlign: "center",
     minHeight: "100vh",
-    width: "100%", // 幅を100%に設定して、中央揃えにする
+    width: "100%",
+  },
+  selectedItem: {
+    fontWeight: "bold",
+    fontSize: "1.2em",
+    color: "#333",
+    marginBottom: "20px",
   },
   dropzone: {
     border: "2px dashed #cccccc",
@@ -211,18 +254,14 @@ const styles = {
     cursor: "pointer",
     marginBottom: "20px",
     width: "80%",
-    maxWidth: "1000px", // 最大幅を設定して中央揃えを維持
-  },
-  scaleSelector: {
-    marginBottom: "20px",
-    display: "flex",
-    justifyContent: "center",
-    gap: "20px",
+    maxWidth: "1000px",
+    margin: "0 auto",
+    marginTop: "20px",
   },
   previewContainer: {
     textAlign: "center",
-    width: "100%", // 全体を中央に揃えるため幅を100%に設定
-    maxWidth: "1000px", // 最大幅を設定して中央揃えを維持
+    width: "100%",
+    maxWidth: "1000px",
   },
   imageContainer: {
     position: "relative",
