@@ -292,6 +292,8 @@ const styles = {
     color: "blue",
     maxWidth: "80%",
     margin: "auto",
+    fontSize: "20px",
+    marginTop: "20px",
   },
   result: {
     fontWeight: "bold",
