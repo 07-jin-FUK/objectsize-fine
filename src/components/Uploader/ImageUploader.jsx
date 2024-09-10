@@ -35,7 +35,7 @@ const ImageUploader = () => {
   const [points, setPoints] = useState([]);
   const [scale, setScale] = useState(null);
   const [message, setMessage] = useState(
-    "基準を設定します。基準となる物の片方の端をクリックしてください。"
+    "上記より参考基準を指定し基準の片端をクリックしてください。"
   );
   const [measurements, setMeasurements] = useState([]);
   const [result, setResult] = useState(null);
@@ -118,7 +118,7 @@ const ImageUploader = () => {
             distance: realDistance,
           },
         ]);
-        setMessage("計測が完了しました。次の2点をクリックして再計測できます。");
+        setMessage("計測が完了しました。");
         setPoints([]);
       }
     } else {
@@ -136,6 +136,14 @@ const ImageUploader = () => {
 
   return (
     <div style={styles.container}>
+      <div {...getRootProps()} style={styles.dropzone}>
+        <input {...getInputProps()} />
+        {isDragActive ? (
+          <p>ここにドロップして画像をアップロード</p>
+        ) : (
+          <p>画像をドラッグ＆ドロップするか、クリックして選択</p>
+        )}
+      </div>
       {selectedSubCategory && (
         <p style={styles.selectedItem}>比較対象: {selectedSubCategory}</p>
       )}
@@ -163,20 +171,17 @@ const ImageUploader = () => {
         />
       )}
 
-      <div {...getRootProps()} style={styles.dropzone}>
-        <input {...getInputProps()} />
-        {isDragActive ? (
-          <p>ここにドロップして画像をアップロード</p>
-        ) : (
-          <p>画像をドラッグ＆ドロップするか、クリックして選択</p>
-        )}
-      </div>
-
-      {preview && (
+      {!preview ? (
+        <p style={styles.message}>
+          画像を上記点線枠内にアップロードしてください。
+        </p>
+      ) : (
         <div style={styles.previewContainer}>
           <p style={styles.message}>{message}</p>
-          {scale && (
-            <p>基準スケール設定完了: 1ピクセル = {scale.toFixed(2)} cm</p>
+          {scale && selectedCategory && selectedSubCategory && (
+            <p style={styles.scaleInfo}>
+              基準スケール設定完了: {selectedCategory}（{selectedSubCategory}）
+            </p>
           )}
           {result && <p style={styles.result}>{result}</p>}
           <p>選択中の画像:</p>
@@ -297,8 +302,27 @@ const styles = {
   },
   result: {
     fontWeight: "bold",
-    color: "green",
-    marginTop: "20px",
+    fontSize: "2em", // フォントサイズを大きく
+    color: "white", // 白い文字
+    backgroundColor: "#007BFF", // 背景色をおしゃれな青に
+    padding: "10px 20px", // パディングを追加
+    borderRadius: "8px", // 丸みを帯びた角
+    marginTop: "20px", // 上に余白を追加
+    boxShadow: "0px 4px 8px rgba(0, 0, 0, 0.2)", // おしゃれな影を追加
+    // border: "2px solid #0056b3", // 境界線を追加
+    textAlign: "center", // テキストを中央揃え
+  },
+  scaleInfo: {
+    fontWeight: "bold",
+    fontSize: "1.2em",
+    color: "#ffffff", // 白い文字
+    backgroundColor: "#28a745", // 緑色
+    padding: "10px 20px",
+    borderRadius: "8px",
+    marginTop: "15px",
+    boxShadow: "0px 4px 8px rgba(0, 0, 0, 0.2)", // おしゃれな影を追加
+    // border: "2px solid #218838", // 境界線を追加
+    textAlign: "center",
   },
 };
 
