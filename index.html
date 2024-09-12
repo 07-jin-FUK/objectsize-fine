@@ -7,9 +7,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>SizeSnap</title>
 
-  <!-- OpenCV.js の CDN スクリプトを追加 -->
-  <script async src="https://docs.opencv.org/3.4/opencv.js" type="text/javascript"></script>
+  <!-- OpenCV.js の CDN スクリプトを最新バージョンに変更し、onloadで初期化 -->
+  <script async src="https://docs.opencv.org/4.x/opencv.js" onload="onOpenCvReady();" type="text/javascript"></script>
 
+  <script>
+    function onOpenCvReady() {
+      console.log('OpenCV.js is ready.');
+      // OpenCVの処理をここで開始できます
+    }
+  </script>
 </head>
 
 <body>
