@@ -10,15 +10,15 @@ const SubCategorySelector = ({
     <div style={styles.dropdown}>
       {categories[category].map((subCategory) => (
         <div
-          key={subCategory}
+          key={subCategory.name} // ユニークなキーをオブジェクトのnameから取得
           style={{
             ...styles.dropdownItem,
             backgroundColor:
-              selectedSubCategory === subCategory ? "#dcdcdc" : "#ffffff",
+              selectedSubCategory === subCategory.name ? "#dcdcdc" : "#ffffff",
           }}
-          onClick={() => onSubCategorySelect(subCategory)}
+          onClick={() => onSubCategorySelect(subCategory.name)}
         >
-          {subCategory}
+          {subCategory.name}
         </div>
       ))}
     </div>

@@ -1,38 +1,33 @@
 import React, { useEffect } from "react";
 
 const categories = {
-  定規: ["10cm（標準）", "20cm（標準）"],
+  定規: [
+    { name: "10cm（標準）", size: 10 },
+    { name: "20cm（標準）", size: 20 },
+  ],
   紙幣: [
-    "1000円札（15.5cm x 7.6cm）",
-    "5000円札（15.6cm x 7.6cm）",
-    "1万円札（16cm x 7.6cm）",
+    { name: "1000円札", size: 15.5 },
+    { name: "5000円札", size: 15.6 },
+    { name: "1万円札", size: 16.0 },
   ],
   硬貨: [
-    "1円硬貨（直径2.0cm）",
-    "5円硬貨（直径2.1cm）",
-    "10円硬貨（直径2.3cm）",
-    "50円硬貨/100円硬貨（直径2.5cm）",
-    "500円硬貨（直径2.65cm）",
+    { name: "1円硬貨", size: 2.0 },
+    { name: "5円硬貨", size: 2.1 },
+    { name: "10円硬貨", size: 2.3 },
+    { name: "50円硬貨/100円硬貨", size: 2.5 },
+    { name: "500円硬貨", size: 2.65 },
   ],
   カード類: [
-    "クレジットカード/ICカード（8.56cm x 5.4cm）",
-    "名刺（9.1cm x 5.5cm）",
+    { name: "クレジットカード/ICカード", size: 8.56 },
+    { name: "名刺", size: 9.1 },
   ],
   タバコの箱: [
-    "タバコの箱（5.4cm x 8.6cm x 2.2cm）",
-    "ライター（7.4cm x 2.5cm x 1.2cm）",
+    { name: "タバコの箱", size: 8.6 }, // 横の長さ
+    { name: "ライター", size: 7.4 }, // 横の長さ
   ],
-  その他: [], // カスタムサイズ用
+  その他: [],
 };
-
 const CategorySelector = ({ onCategorySelect, selectedCategory }) => {
-  useEffect(() => {
-    // サブカテゴリが1つしかない場合は自動的に選択する
-    if (selectedCategory && categories[selectedCategory].length === 1) {
-      onCategorySelect(categories[selectedCategory][0]);
-    }
-  }, [selectedCategory, onCategorySelect]);
-
   return (
     <div style={styles.menu}>
       {Object.keys(categories).map((category) => (
