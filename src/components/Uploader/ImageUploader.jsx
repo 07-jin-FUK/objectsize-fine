@@ -290,7 +290,6 @@ const styles = {
     height: "10px",
     backgroundColor: "red",
     borderRadius: "50%",
-    transform: "translate(-50%, -50%)",
   },
   line: {
     position: "absolute",

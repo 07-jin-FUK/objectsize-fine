@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { useDropzone } from "react-dropzone";
 
 // OpenCVのロードを待つ関数
@@ -33,6 +33,15 @@ const SizeMeasurement = () => {
   const [isReadyForMeasurement, setIsReadyForMeasurement] = useState(false); // 計測ボタンの表示
   const imageRef = useRef(null);
 
+  useEffect(() => {
+    if (imageRef.current) {
+      const img = imageRef.current;
+      setMessage(
+        `画像サイズ: ${img.naturalWidth} x ${img.naturalHeight} ピクセル`
+      );
+    }
+  }, [imageSrc]);
+
   // 画像がアップロードされたときに呼ばれる関数
   const onDrop = (acceptedFiles) => {
     const file = acceptedFiles[0];
@@ -55,15 +64,20 @@ const SizeMeasurement = () => {
     if (!imageRef.current) return;
 
     const rect = imageRef.current.getBoundingClientRect();
+
+    // 実際のサイズと表示サイズのスケールを計算
     const scaleX = imageRef.current.naturalWidth / rect.width;
     const scaleY = imageRef.current.naturalHeight / rect.height;
+
+    // 表示サイズでの座標計算
     const x = (e.clientX - rect.left) * scaleX;
     const y = (e.clientY - rect.top) * scaleY;
 
+    // ポイントを更新
     if (points.length < 4) {
       setPoints([...points, { x, y }]);
 
-      // クリックごとのメッセージ表示
+      // メッセージ更新
       if (points.length === 0) {
         setMessage("2点目: 千円札の右上をクリックしてください。");
       } else if (points.length === 1) {
@@ -305,10 +319,8 @@ const styles = {
   },
   image: {
     cursor: "crosshair",
-    marginTop: "20px",
-    maxWidth: "80%", // 幅を少し縮めてメッセージと重ならないようにする
-    maxHeight: "400px", // 高さを400pxに制限
-    objectFit: "contain",
+    maxWidth: "100%", // 幅を100%に設定
+    maxHeight: "500px", // 高さを500pxに制限
   },
   canvas: {
     marginTop: "20px",
@@ -330,7 +342,6 @@ const styles = {
     height: "10px",
     backgroundColor: "red",
     borderRadius: "50%",
-    transform: "translate(-50%, -50%)",
   },
   svgOverlay: {
     position: "absolute",
