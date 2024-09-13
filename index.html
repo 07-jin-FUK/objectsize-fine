@@ -5,22 +5,12 @@
   <meta charset="UTF-8" />
   <link rel="icon" type="image/svg+xml" href="/vite.svg" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>SizeSnap</title>
-
-  <!-- OpenCV.js の CDN スクリプトを最新バージョンに変更し、onloadで初期化 -->
-  <script async src="https://docs.opencv.org/4.x/opencv.js" onload="onOpenCvReady();" type="text/javascript"></script>
-
-  <script>
-    function onOpenCvReady() {
-      console.log('OpenCV.js is ready.');
-      // OpenCVの処理をここで開始できます
-    }
-  </script>
+  <title>SizeSnap - 簡単サイズ測定アプリ</title>
 </head>
 
 <body>
   <div id="root"></div>
-  <script type="module" src="/src/main.jsx"></script>
+  <script type="module" src="/src/main.jsx"></script> <!-- Reactアプリのエントリーポイント -->
 </body>
 
 </html>

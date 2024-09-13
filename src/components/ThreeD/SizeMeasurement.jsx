@@ -1,28 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useDropzone } from "react-dropzone";
-
-// OpenCVのロードを待つ関数
-const loadOpenCV = () => {
-  return new Promise((resolve, reject) => {
-    if (window.cv) {
-      console.log("OpenCVはすでにロードされています");
-      resolve(window.cv);
-    } else {
-      console.log("OpenCVのロードを開始します");
-      window.Module = {
-        onRuntimeInitialized() {
-          console.log("OpenCVの初期化が完了しました");
-          resolve(window.cv);
-        },
-      };
-      setTimeout(() => {
-        if (!window.cv) {
-          reject(new Error("OpenCVが正常に読み込まれませんでした"));
-        }
-      }, 5000); // 5秒後にエラーチェック
-    }
-  });
-};
+import axios from "axios";
 
 const SizeMeasurement = () => {
   const [imageSrc, setImageSrc] = useState(null);
@@ -32,6 +10,7 @@ const SizeMeasurement = () => {
   const [message, setMessage] = useState("画像をアップロードしてください"); // メッセージ表示用
   const [isReadyForMeasurement, setIsReadyForMeasurement] = useState(false); // 計測ボタンの表示
   const imageRef = useRef(null);
+  const [imageFile, setImageFile] = useState(null); // アップロードされた画像ファイル
 
   useEffect(() => {
     if (imageRef.current) {
@@ -45,6 +24,7 @@ const SizeMeasurement = () => {
   // 画像がアップロードされたときに呼ばれる関数
   const onDrop = (acceptedFiles) => {
     const file = acceptedFiles[0];
+    setImageFile(file); // アップロードされた画像ファイルを保存
     const reader = new FileReader();
     reader.onload = () => {
       setImageSrc(reader.result); // 画像の表示
@@ -93,87 +73,29 @@ const SizeMeasurement = () => {
     }
   };
 
-  // 計測を開始する関数
+  // 画像をPythonバックエンドに送信して処理を依頼
   const startMeasurement = async () => {
     console.log("スケール計測の準備中...");
     try {
-      const cv = await loadOpenCV(); // OpenCVの読み込みを待つ
-      console.log("OpenCVがロードされました");
+      const formData = new FormData();
+      formData.append("image", imageFile); // アップロードした画像を追加
+      formData.append("points", JSON.stringify(points)); // クリックされた4点の座標を追加
 
-      if (!cv) {
-        throw new Error("OpenCVがロードされていません");
-      }
+      const response = await axios.post(
+        "http://127.0.0.1:5000/process-image",
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
 
-      setMessage("スケール計測中...");
-      console.log("スケール計測開始");
-
-      // 透視変換の処理
-      console.log("クリックされた4点:", points);
-
-      if (points.length !== 4) {
-        throw new Error("4点のクリックが完了していません");
-      }
-
-      const srcCoords = cv.matFromArray(4, 1, cv.CV_32FC2, [
-        points[0].x,
-        points[0].y, // 1点目
-        points[1].x,
-        points[1].y, // 2点目
-        points[2].x,
-        points[2].y, // 3点目
-        points[3].x,
-        points[3].y, // 4点目
-      ]);
-      const dstCoords = cv.matFromArray(4, 1, cv.CV_32FC2, [
-        0,
-        0, // 目標の座標
-        155,
-        0, // 千円札の幅15.5cmに相当
-        155,
-        76, // 15.5cm × 7.6cm
-        0,
-        76,
-      ]);
-
-      const imgElement = document.getElementById("uploaded-image");
-      if (!imgElement) {
-        throw new Error("画像が見つかりませんでした");
-      }
-      console.log("画像要素の取得:", imgElement);
-
-      const src = cv.imread(imgElement);
-      if (src.empty()) {
-        throw new Error("画像の読み込みに失敗しました。");
-      }
-
-      const dst = new cv.Mat();
-
-      const transformMatrix = cv.getPerspectiveTransform(srcCoords, dstCoords);
-      console.log("透視変換マトリックスの作成完了:", transformMatrix);
-
-      try {
-        cv.warpPerspective(src, dst, transformMatrix, new cv.Size(155, 76));
-        console.log("透視変換が完了しました");
-
-        // 結果をキャンバスに表示
-        cv.imshow("canvasOutput", dst);
-
-        setScale(0.1); // 仮に1ピクセル = 0.1cmとして設定
-        setMessage("スケール計測が完了しました。");
-      } catch (error) {
-        console.error("透視変換中にエラーが発生しました:", error);
-        setMessage("計測中にエラーが発生しました。");
-      } finally {
-        // クリーンアップ
-        src.delete();
-        dst.delete();
-        srcCoords.delete();
-        dstCoords.delete();
-        transformMatrix.delete();
-      }
+      console.log("サーバーレスポンス: ", response.data); // レスポンスを確認
+      setResult(response.data.measured_length); // サーバーからの結果を反映
     } catch (error) {
-      console.error("エラーが発生しました:", error);
-      setMessage("エラーが発生しました。再度お試しください。");
+      console.error("計測中にエラーが発生しました:", error);
+      setMessage("計測中にエラーが発生しました。");
     }
   };
 
@@ -215,6 +137,7 @@ const SizeMeasurement = () => {
               }}
             />
           ))}
+
           {/* 点と点を結ぶ線を描画 */}
           {points.length > 1 && (
             <svg style={styles.svgOverlay}>
@@ -283,9 +206,6 @@ const SizeMeasurement = () => {
           計測を開始する
         </button>
       )}
-
-      {/* 測定結果を表示 */}
-      {result && <p>{result}</p>}
     </div>
   );
 };
@@ -319,8 +239,8 @@ const styles = {
   },
   image: {
     cursor: "crosshair",
-    maxWidth: "100%", // 幅を100%に設定
-    maxHeight: "500px", // 高さを500pxに制限
+    maxWidth: "100%",
+    maxHeight: "500px",
   },
   canvas: {
     marginTop: "20px",
@@ -342,27 +262,28 @@ const styles = {
     height: "10px",
     backgroundColor: "red",
     borderRadius: "50%",
+    transform: "translate(-50%, -50%)",
   },
   svgOverlay: {
     position: "absolute",
-    left: 0,
     top: 0,
+    left: 0,
     width: "100%",
     height: "100%",
-    pointerEvents: "none", // マウスイベントを通さない
+    pointerEvents: "none",
   },
   line: {
-    stroke: "blue",
-    strokeWidth: 2,
+    stroke: "red",
+    strokeWidth: "2",
+    fill: "none",
   },
   measureButton: {
     marginTop: "20px",
     padding: "10px 20px",
-    fontSize: "16px",
-    backgroundColor: "#007BFF",
+    backgroundColor: "#007bff",
     color: "#fff",
     border: "none",
-    borderRadius: "5px",
+    borderRadius: "4px",
     cursor: "pointer",
   },
 };
