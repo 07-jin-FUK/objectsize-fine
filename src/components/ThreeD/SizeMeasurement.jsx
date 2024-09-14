@@ -4,8 +4,8 @@ import axios from "axios";
 
 const SizeMeasurement = () => {
   const [imageSrc, setImageSrc] = useState(null);
-  const [points, setPoints] = useState([]); // クリックされたポイント（4点）
-  const [scale, setScale] = useState(null); // スケールを保持
+  const [scalePoints, setScalePoints] = useState([]); // スケール用の4点
+  const [measurePoints, setMeasurePoints] = useState([]); // 測定用の2点
   const [result, setResult] = useState(null); // 測定結果
   const [message, setMessage] = useState("画像をアップロードしてください"); // メッセージ表示用
   const [isReadyForMeasurement, setIsReadyForMeasurement] = useState(false); // 計測ボタンの表示
@@ -31,7 +31,8 @@ const SizeMeasurement = () => {
       setMessage(
         "画像がアップロードされました。千円札の左上をクリックしてください。"
       );
-      setPoints([]); // ポイントをリセット
+      setScalePoints([]); // スケールポイントをリセット
+      setMeasurePoints([]); // 測定ポイントをリセット
       setIsReadyForMeasurement(false); // 計測ボタンを非表示に
     };
     reader.readAsDataURL(file);
@@ -53,20 +54,31 @@ const SizeMeasurement = () => {
     const x = (e.clientX - rect.left) * scaleX;
     const y = (e.clientY - rect.top) * scaleY;
 
-    // ポイントを更新
-    if (points.length < 4) {
-      setPoints([...points, { x, y }]);
+    if (scalePoints.length < 4) {
+      setScalePoints([...scalePoints, { x, y }]);
 
       // メッセージ更新
-      if (points.length === 0) {
+      if (scalePoints.length === 0) {
         setMessage("2点目: 千円札の右上をクリックしてください。");
-      } else if (points.length === 1) {
+      } else if (scalePoints.length === 1) {
         setMessage("3点目: 千円札の右下をクリックしてください。");
-      } else if (points.length === 2) {
+      } else if (scalePoints.length === 2) {
         setMessage("4点目: 千円札の左下をクリックしてください。");
-      } else if (points.length === 3) {
+      } else if (scalePoints.length === 3) {
         setMessage(
-          "全ての点が選択されました。「計測を開始する」を押してください。"
+          "スケールが設定されました。次に測りたい2点をクリックしてください。"
+        );
+      }
+    } else if (measurePoints.length < 2) {
+      // 測定用のポイントを取得
+      setMeasurePoints([...measurePoints, { x, y }]);
+
+      // メッセージ更新
+      if (measurePoints.length === 0) {
+        setMessage("次に測定したい2点目をクリックしてください。");
+      } else if (measurePoints.length === 1) {
+        setMessage(
+          "測定するポイントが選択されました。「計測を開始する」を押してください。"
         );
         setIsReadyForMeasurement(true); // 計測ボタンを表示
       }
@@ -79,7 +91,8 @@ const SizeMeasurement = () => {
     try {
       const formData = new FormData();
       formData.append("image", imageFile); // アップロードした画像を追加
-      formData.append("points", JSON.stringify(points)); // クリックされた4点の座標を追加
+      const allPoints = [...scalePoints, ...measurePoints];
+      formData.append("points", JSON.stringify(allPoints)); // クリックされたスケール4点と測定2点を追加
 
       const response = await axios.post(
         "http://127.0.0.1:5000/process-image",
@@ -92,7 +105,14 @@ const SizeMeasurement = () => {
       );
 
       console.log("サーバーレスポンス: ", response.data); // レスポンスを確認
-      setResult(response.data.measured_length); // サーバーからの結果を反映
+
+      // サーバーからの結果をフロント側で表示するために状態を更新
+      if (response.data.measured_length) {
+        setResult(response.data.measured_length); // 結果をセット
+        setMessage(`計測結果: ${response.data.measured_length} cm`); // 計測結果をメッセージに反映
+      } else {
+        setMessage("計測が完了しましたが、結果が得られませんでした。");
+      }
     } catch (error) {
       console.error("計測中にエラーが発生しました:", error);
       setMessage("計測中にエラーが発生しました。");
@@ -117,15 +137,35 @@ const SizeMeasurement = () => {
             src={imageSrc}
             alt="Uploaded"
             ref={imageRef}
-            onClick={handleImageClick} // 4点クリックでポイント設定
+            onClick={handleImageClick} // スケール4点と測定用2点のクリックを処理
             style={styles.image}
           />
-          {/* クリックされた場所にマーカーを表示 */}
-          {points.map((point, index) => (
+          {/* スケール設定用のクリックされた場所にマーカーを表示（赤） */}
+          {scalePoints.map((point, index) => (
             <div
               key={index}
               style={{
                 ...styles.pointMarker,
+                backgroundColor: "red", // 赤色
+                left:
+                  point.x /
+                    (imageRef.current.naturalWidth / imageRef.current.width) -
+                  5,
+                top:
+                  point.y /
+                    (imageRef.current.naturalHeight / imageRef.current.height) -
+                  5,
+              }}
+            />
+          ))}
+
+          {/* 測定用のクリックされた場所にマーカーを表示（青） */}
+          {measurePoints.map((point, index) => (
+            <div
+              key={index}
+              style={{
+                ...styles.pointMarker,
+                backgroundColor: "blue", // 青色
                 left:
                   point.x /
                     (imageRef.current.naturalWidth / imageRef.current.width) -
@@ -139,19 +179,19 @@ const SizeMeasurement = () => {
           ))}
 
           {/* 点と点を結ぶ線を描画 */}
-          {points.length > 1 && (
+          {scalePoints.length > 1 && (
             <svg style={styles.svgOverlay}>
-              {points.map((point, index) => {
+              {scalePoints.map((point, index) => {
                 if (index === 0) return null; // 最初の点は線を引かない
                 return (
                   <line
                     key={index}
                     x1={
-                      points[index - 1].x /
+                      scalePoints[index - 1].x /
                       (imageRef.current.naturalWidth / imageRef.current.width)
                     }
                     y1={
-                      points[index - 1].y /
+                      scalePoints[index - 1].y /
                       (imageRef.current.naturalHeight / imageRef.current.height)
                     }
                     x2={
@@ -162,30 +202,53 @@ const SizeMeasurement = () => {
                       point.y /
                       (imageRef.current.naturalHeight / imageRef.current.height)
                     }
-                    style={styles.line}
+                    style={styles.redLine} // スケール用の線を赤色に
                   />
                 );
               })}
-              {/* 四角形を作るために、4点目と1点目の間に線を引く */}
-              {points.length === 4 && (
+              {/* スケール用の四角形を作るために、4点目と1点目の間に線を引く */}
+              {scalePoints.length === 4 && (
                 <line
                   x1={
-                    points[3].x /
+                    scalePoints[3].x /
                     (imageRef.current.naturalWidth / imageRef.current.width)
                   }
                   y1={
-                    points[3].y /
+                    scalePoints[3].y /
                     (imageRef.current.naturalHeight / imageRef.current.height)
                   }
                   x2={
-                    points[0].x /
+                    scalePoints[0].x /
                     (imageRef.current.naturalWidth / imageRef.current.width)
                   }
                   y2={
-                    points[0].y /
+                    scalePoints[0].y /
                     (imageRef.current.naturalHeight / imageRef.current.height)
                   }
-                  style={styles.line}
+                  style={styles.redLine} // 赤色の線
+                />
+              )}
+
+              {/* 測定用の2点を結ぶ線を描画（青色） */}
+              {measurePoints.length === 2 && (
+                <line
+                  x1={
+                    measurePoints[0].x /
+                    (imageRef.current.naturalWidth / imageRef.current.width)
+                  }
+                  y1={
+                    measurePoints[0].y /
+                    (imageRef.current.naturalHeight / imageRef.current.height)
+                  }
+                  x2={
+                    measurePoints[1].x /
+                    (imageRef.current.naturalWidth / imageRef.current.width)
+                  }
+                  y2={
+                    measurePoints[1].y /
+                    (imageRef.current.naturalHeight / imageRef.current.height)
+                  }
+                  style={styles.blueLine} // 青色の線
                 />
               )}
             </svg>
@@ -205,6 +268,13 @@ const SizeMeasurement = () => {
         <button style={styles.measureButton} onClick={startMeasurement}>
           計測を開始する
         </button>
+      )}
+
+      {/* 結果を表示 */}
+      {result && (
+        <div style={styles.resultContainer}>
+          <h3>計測結果: {result} cm</h3>
+        </div>
       )}
     </div>
   );
@@ -260,9 +330,7 @@ const styles = {
     position: "absolute",
     width: "10px",
     height: "10px",
-    backgroundColor: "red",
     borderRadius: "50%",
-    transform: "translate(-50%, -50%)",
   },
   svgOverlay: {
     position: "absolute",
@@ -272,9 +340,14 @@ const styles = {
     height: "100%",
     pointerEvents: "none",
   },
-  line: {
+  redLine: {
     stroke: "red",
-    strokeWidth: "2",
+    strokeWidth: "3",
+    fill: "none",
+  },
+  blueLine: {
+    stroke: "blue",
+    strokeWidth: "3",
     fill: "none",
   },
   measureButton: {
@@ -285,6 +358,15 @@ const styles = {
     border: "none",
     borderRadius: "4px",
     cursor: "pointer",
+  },
+  resultContainer: {
+    marginTop: "20px",
+    padding: "10px",
+    backgroundColor: "#f0f0f0",
+    border: "1px solid #ccc",
+    borderRadius: "4px",
+    width: "80%",
+    maxWidth: "1000px",
   },
 };
 
