@@ -7,19 +7,10 @@ const SizeMeasurement = () => {
   const [scalePoints, setScalePoints] = useState([]); // スケール用の4点
   const [measurePoints, setMeasurePoints] = useState([]); // 測定用の2点
   const [result, setResult] = useState(null); // 測定結果
-  const [message, setMessage] = useState("画像をアップロードしてください"); // メッセージ表示用
+  const [message, setMessage] = useState("画像をアップロードしてください。"); // 初期メッセージ
   const [isReadyForMeasurement, setIsReadyForMeasurement] = useState(false); // 計測ボタンの表示
   const imageRef = useRef(null);
   const [imageFile, setImageFile] = useState(null); // アップロードされた画像ファイル
-
-  useEffect(() => {
-    if (imageRef.current) {
-      const img = imageRef.current;
-      setMessage(
-        `画像サイズ: ${img.naturalWidth} x ${img.naturalHeight} ピクセル`
-      );
-    }
-  }, [imageSrc]);
 
   // 画像がアップロードされたときに呼ばれる関数
   const onDrop = (acceptedFiles) => {
@@ -28,12 +19,13 @@ const SizeMeasurement = () => {
     const reader = new FileReader();
     reader.onload = () => {
       setImageSrc(reader.result); // 画像の表示
+      setScalePoints([]); // スケールポイントをリセット
+      setMeasurePoints([]); // 測定ポイントをリセット
       setMessage(
         "画像がアップロードされました。千円札の左上をクリックしてください。"
       );
-      setScalePoints([]); // スケールポイントをリセット
-      setMeasurePoints([]); // 測定ポイントをリセット
       setIsReadyForMeasurement(false); // 計測ボタンを非表示に
+      setResult(null); // 結果もリセット
     };
     reader.readAsDataURL(file);
   };
@@ -45,19 +37,14 @@ const SizeMeasurement = () => {
     if (!imageRef.current) return;
 
     const rect = imageRef.current.getBoundingClientRect();
-
-    // 実際のサイズと表示サイズのスケールを計算
     const scaleX = imageRef.current.naturalWidth / rect.width;
     const scaleY = imageRef.current.naturalHeight / rect.height;
-
-    // 表示サイズでの座標計算
     const x = (e.clientX - rect.left) * scaleX;
     const y = (e.clientY - rect.top) * scaleY;
 
     if (scalePoints.length < 4) {
       setScalePoints([...scalePoints, { x, y }]);
 
-      // メッセージ更新
       if (scalePoints.length === 0) {
         setMessage("2点目: 千円札の右上をクリックしてください。");
       } else if (scalePoints.length === 1) {
@@ -70,10 +57,8 @@ const SizeMeasurement = () => {
         );
       }
     } else if (measurePoints.length < 2) {
-      // 測定用のポイントを取得
       setMeasurePoints([...measurePoints, { x, y }]);
 
-      // メッセージ更新
       if (measurePoints.length === 0) {
         setMessage("次に測定したい2点目をクリックしてください。");
       } else if (measurePoints.length === 1) {
@@ -104,9 +89,6 @@ const SizeMeasurement = () => {
         }
       );
 
-      console.log("サーバーレスポンス: ", response.data); // レスポンスを確認
-
-      // サーバーからの結果をフロント側で表示するために状態を更新
       if (response.data.measured_length) {
         setResult(response.data.measured_length); // 結果をセット
         setMessage(`計測結果: ${response.data.measured_length} cm`); // 計測結果をメッセージに反映
@@ -117,6 +99,37 @@ const SizeMeasurement = () => {
       console.error("計測中にエラーが発生しました:", error);
       setMessage("計測中にエラーが発生しました。");
     }
+  };
+
+  // ボタン機能
+  const undoLastAction = () => {
+    if (measurePoints.length > 0) {
+      setMeasurePoints(measurePoints.slice(0, -1));
+    } else if (scalePoints.length > 0) {
+      setScalePoints(scalePoints.slice(0, -1));
+    }
+  };
+
+  const resetScalePoints = () => {
+    setScalePoints([]);
+    setMessage(
+      "スケールをリセットしました。千円札の左上をクリックしてください。"
+    );
+  };
+
+  const resetMeasurePoints = () => {
+    setMeasurePoints([]);
+    setMessage(
+      "測定ポイントをリセットしました。目的物の2点をクリックしてください。"
+    );
+  };
+
+  const resetEverything = () => {
+    setScalePoints([]);
+    setMeasurePoints([]);
+    setMessage("画像をアップロードしてください。");
+    setResult(null);
+    setIsReadyForMeasurement(false);
   };
 
   return (
@@ -263,6 +276,13 @@ const SizeMeasurement = () => {
         <p>{message}</p>
       </div>
 
+      {/* コントロールボタン */}
+      <div style={styles.controlButtons}>
+        <button onClick={undoLastAction}>一つ戻る</button>
+        <button onClick={resetScalePoints}>スケールを測りなおす</button>
+        <button onClick={resetMeasurePoints}>目的物を測りなおす</button>
+      </div>
+
       {/* 計測ボタンを表示 */}
       {isReadyForMeasurement && (
         <button style={styles.measureButton} onClick={startMeasurement}>
@@ -274,6 +294,10 @@ const SizeMeasurement = () => {
       {result && (
         <div style={styles.resultContainer}>
           <h3>計測結果: {result} cm</h3>
+          <button onClick={resetEverything}>違う写真でサイズを測る</button>
+          <button onClick={resetMeasurePoints}>
+            同じ写真で別の部分を計測する
+          </button>
         </div>
       )}
     </div>
