@@ -11,6 +11,7 @@ const SizeMeasurement = () => {
   const [isReadyForMeasurement, setIsReadyForMeasurement] = useState(false); // 計測ボタンの表示
   const imageRef = useRef(null);
   const [imageFile, setImageFile] = useState(null); // アップロードされた画像ファイル
+  const [messageHistory, setMessageHistory] = useState([]); // メッセージ履歴用
 
   // 画像がアップロードされたときに呼ばれる関数
   const onDrop = (acceptedFiles) => {
@@ -21,7 +22,7 @@ const SizeMeasurement = () => {
       setImageSrc(reader.result); // 画像の表示
       setScalePoints([]); // スケールポイントをリセット
       setMeasurePoints([]); // 測定ポイントをリセット
-      setMessage(
+      updateMessage(
         "画像がアップロードされました。千円札の左上をクリックしてください。"
       );
       setIsReadyForMeasurement(false); // 計測ボタンを非表示に
@@ -46,13 +47,13 @@ const SizeMeasurement = () => {
       setScalePoints([...scalePoints, { x, y }]);
 
       if (scalePoints.length === 0) {
-        setMessage("2点目: 千円札の右上をクリックしてください。");
+        updateMessage("2点目: 千円札の右上をクリックしてください。");
       } else if (scalePoints.length === 1) {
-        setMessage("3点目: 千円札の右下をクリックしてください。");
+        updateMessage("3点目: 千円札の右下をクリックしてください。");
       } else if (scalePoints.length === 2) {
-        setMessage("4点目: 千円札の左下をクリックしてください。");
+        updateMessage("4点目: 千円札の左下をクリックしてください。");
       } else if (scalePoints.length === 3) {
-        setMessage(
+        updateMessage(
           "スケールが設定されました。次に測りたい2点をクリックしてください。"
         );
       }
@@ -60,9 +61,9 @@ const SizeMeasurement = () => {
       setMeasurePoints([...measurePoints, { x, y }]);
 
       if (measurePoints.length === 0) {
-        setMessage("次に測定したい2点目をクリックしてください。");
+        updateMessage("次に測定したい2点目をクリックしてください。");
       } else if (measurePoints.length === 1) {
-        setMessage(
+        updateMessage(
           "測定するポイントが選択されました。「計測を開始する」を押してください。"
         );
         setIsReadyForMeasurement(true); // 計測ボタンを表示
@@ -101,27 +102,66 @@ const SizeMeasurement = () => {
     }
   };
 
+  const updateMessage = (newMessage) => {
+    setMessageHistory([...messageHistory, newMessage]); // 新しいメッセージを履歴に追加
+    setMessage(newMessage); // メッセージを更新
+  };
   // ボタン機能
   const undoLastAction = () => {
     if (measurePoints.length > 0) {
+      // スケール設定中の場合、スケールポイントを戻す
       setMeasurePoints(measurePoints.slice(0, -1));
+      updateMessageBasedOnMeasurePoints(measurePoints.length - 1);
     } else if (scalePoints.length > 0) {
+      // 測定中の場合、測定ポイントを戻す
       setScalePoints(scalePoints.slice(0, -1));
+      updateMessageBasedOnScalePoints(scalePoints.length - 1);
+    }
+
+    // メッセージ履歴も一つ戻す
+    if (messageHistory.length > 1) {
+      const newHistory = messageHistory.slice(0, -1); // 最新のメッセージを削除
+      setMessage(newHistory[newHistory.length - 1]); // 一つ前のメッセージに戻す
+      setMessageHistory(newHistory); // 更新した履歴を保存
     }
   };
 
   const resetScalePoints = () => {
+    // スケールポイントのみリセットし、測定ポイントは維持
     setScalePoints([]);
-    setMessage(
+    updateMessage(
       "スケールをリセットしました。千円札の左上をクリックしてください。"
     );
   };
 
   const resetMeasurePoints = () => {
+    // 測定ポイントのみリセットし、スケールポイントは維持
     setMeasurePoints([]);
-    setMessage(
+    updateMessage(
       "測定ポイントをリセットしました。目的物の2点をクリックしてください。"
     );
+  };
+
+  const updateMessageBasedOnScalePoints = (remainingPoints) => {
+    if (remainingPoints === 3) {
+      updateMessage("4点目: 千円札の左下をクリックしてください。");
+    } else if (remainingPoints === 2) {
+      updateMessage("3点目: 千円札の右下をクリックしてください。");
+    } else if (remainingPoints === 1) {
+      updateMessage("2点目: 千円札の右上をクリックしてください。");
+    } else if (remainingPoints === 0) {
+      updateMessage("1点目: 千円札の左上をクリックしてください。");
+    }
+  };
+
+  const updateMessageBasedOnMeasurePoints = (remainingPoints) => {
+    if (remainingPoints === 1) {
+      updateMessage("次に測定したい2点目をクリックしてください。");
+    } else {
+      updateMessage(
+        "測定するポイントが選択されました。「計測を開始する」を押してください。"
+      );
+    }
   };
 
   const resetEverything = () => {
@@ -171,7 +211,6 @@ const SizeMeasurement = () => {
               }}
             />
           ))}
-
           {/* 測定用のクリックされた場所にマーカーを表示（青） */}
           {measurePoints.map((point, index) => (
             <div
@@ -190,10 +229,10 @@ const SizeMeasurement = () => {
               }}
             />
           ))}
-
           {/* 点と点を結ぶ線を描画 */}
           {scalePoints.length > 1 && (
             <svg style={styles.svgOverlay}>
+              {/* スケールポイントの線描画 */}
               {scalePoints.map((point, index) => {
                 if (index === 0) return null; // 最初の点は線を引かない
                 return (
@@ -219,7 +258,7 @@ const SizeMeasurement = () => {
                   />
                 );
               })}
-              {/* スケール用の四角形を作るために、4点目と1点目の間に線を引く */}
+              {/* スケールの4点が完成したら、四角形を描画 */}
               {scalePoints.length === 4 && (
                 <line
                   x1={
@@ -241,8 +280,7 @@ const SizeMeasurement = () => {
                   style={styles.redLine} // 赤色の線
                 />
               )}
-
-              {/* 測定用の2点を結ぶ線を描画（青色） */}
+              {/* 測定用のポイントの線描画（目的物の線） */}
               {measurePoints.length === 2 && (
                 <line
                   x1={
@@ -278,9 +316,15 @@ const SizeMeasurement = () => {
 
       {/* コントロールボタン */}
       <div style={styles.controlButtons}>
-        <button onClick={undoLastAction}>一つ戻る</button>
-        <button onClick={resetScalePoints}>スケールを測りなおす</button>
-        <button onClick={resetMeasurePoints}>目的物を測りなおす</button>
+        <button style={styles.controlButton} onClick={undoLastAction}>
+          一つ戻る
+        </button>
+        <button style={styles.controlButton} onClick={resetScalePoints}>
+          スケールを測りなおす
+        </button>
+        <button style={styles.controlButton} onClick={resetMeasurePoints}>
+          目的物を測りなおす
+        </button>
       </div>
 
       {/* 計測ボタンを表示 */}
@@ -294,8 +338,10 @@ const SizeMeasurement = () => {
       {result && (
         <div style={styles.resultContainer}>
           <h3>計測結果: {result} cm</h3>
-          <button onClick={resetEverything}>違う写真でサイズを測る</button>
-          <button onClick={resetMeasurePoints}>
+          <button style={styles.controlButton} onClick={resetEverything}>
+            違う写真でサイズを測る
+          </button>
+          <button style={styles.controlButton} onClick={resetMeasurePoints}>
             同じ写真で別の部分を計測する
           </button>
         </div>
@@ -391,6 +437,36 @@ const styles = {
     borderRadius: "4px",
     width: "80%",
     maxWidth: "1000px",
+  },
+  controlButton: {
+    padding: "10px 15px",
+    backgroundColor: "#007bff",
+    color: "#fff",
+    border: "none",
+    borderRadius: "4px",
+    cursor: "pointer",
+    fontSize: "16px",
+    fontWeight: "bold",
+    transition: "background-color 0.3s ease",
+    margin: "5px",
+  },
+  controlButtonHover: {
+    backgroundColor: "#0056b3", // Hover時の色
+  },
+  measureButton: {
+    marginTop: "20px",
+    padding: "10px 20px",
+    backgroundColor: "#28a745",
+    color: "#fff",
+    border: "none",
+    borderRadius: "4px",
+    cursor: "pointer",
+    fontSize: "16px",
+    fontWeight: "bold",
+    transition: "background-color 0.3s ease",
+  },
+  measureButtonHover: {
+    backgroundColor: "#218838", // Hover時の色
   },
 };
 
