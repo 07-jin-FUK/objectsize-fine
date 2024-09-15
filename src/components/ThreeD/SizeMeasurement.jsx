@@ -182,6 +182,31 @@ const SizeMeasurement = () => {
         <p>ここに画像をドラッグ＆ドロップ、またはクリックしてファイルを選択</p>
       </div>
 
+      {/* メッセージを表示 */}
+      <div style={styles.messageContainer}>
+        <p>{message}</p>
+        {/* 画像の右側にボタンを縦に配置 */}
+        <div style={styles.controlButtonsContainer}>
+          <button style={styles.controlButton} onClick={undoLastAction}>
+            一つ戻る
+          </button>
+          <button
+            style={styles.controlButton}
+            onClick={resetScalePoints}
+            disabled={scalePoints.length === 0} // スケールが設定され始めたら有効化
+          >
+            スケールを測りなおす
+          </button>
+          <button
+            style={styles.controlButton}
+            onClick={resetMeasurePoints}
+            disabled={measurePoints.length === 0} // 測定が始まったら有効化
+          >
+            目的物を測りなおす
+          </button>
+        </div>
+      </div>
+
       {/* アップロードされた画像を表示 */}
       {imageSrc && (
         <div style={styles.imageContainer}>
@@ -190,9 +215,10 @@ const SizeMeasurement = () => {
             src={imageSrc}
             alt="Uploaded"
             ref={imageRef}
-            onClick={handleImageClick} // スケール4点と測定用2点のクリックを処理
+            onClick={handleImageClick}
             style={styles.image}
           />
+
           {/* スケール設定用のクリックされた場所にマーカーを表示（赤） */}
           {scalePoints.map((point, index) => (
             <div
@@ -307,26 +333,6 @@ const SizeMeasurement = () => {
         </div>
       )}
 
-      <canvas id="canvasOutput" style={styles.canvas}></canvas>
-
-      {/* メッセージを表示 */}
-      <div style={styles.messageContainer}>
-        <p>{message}</p>
-      </div>
-
-      {/* コントロールボタン */}
-      <div style={styles.controlButtons}>
-        <button style={styles.controlButton} onClick={undoLastAction}>
-          一つ戻る
-        </button>
-        <button style={styles.controlButton} onClick={resetScalePoints}>
-          スケールを測りなおす
-        </button>
-        <button style={styles.controlButton} onClick={resetMeasurePoints}>
-          目的物を測りなおす
-        </button>
-      </div>
-
       {/* 計測ボタンを表示 */}
       {isReadyForMeasurement && (
         <button style={styles.measureButton} onClick={startMeasurement}>
@@ -368,38 +374,38 @@ const styles = {
     textAlign: "center",
     cursor: "pointer",
     marginBottom: "20px",
-    width: "80%",
+    width: "60%",
     maxWidth: "1000px",
     margin: "0 auto",
     marginTop: "20px",
   },
   imageContainer: {
     position: "relative",
-    display: "inline-block",
+    display: "flex", // フレックスボックスで画像とボタンを横並びに
+    justifyContent: "center",
   },
   image: {
     cursor: "crosshair",
     maxWidth: "100%",
     maxHeight: "500px",
   },
-  canvas: {
-    marginTop: "20px",
-    border: "1px solid #000",
-    maxWidth: "80%",
-  },
   messageContainer: {
     marginTop: "20px",
+    marginBottom: "20px",
     padding: "10px",
     backgroundColor: "#f8f8f8",
     border: "1px solid #ccc",
     borderRadius: "4px",
     width: "80%",
     maxWidth: "1000px",
+    fontWeight: "bold",
+    fontSize: "22px",
+    color: "red",
   },
   pointMarker: {
     position: "absolute",
-    width: "10px",
-    height: "10px",
+    width: "12px",
+    height: "12px",
     borderRadius: "50%",
   },
   svgOverlay: {
@@ -412,12 +418,12 @@ const styles = {
   },
   redLine: {
     stroke: "red",
-    strokeWidth: "3",
+    strokeWidth: "4",
     fill: "none",
   },
   blueLine: {
     stroke: "blue",
-    strokeWidth: "3",
+    strokeWidth: "4",
     fill: "none",
   },
   measureButton: {
@@ -438,18 +444,7 @@ const styles = {
     width: "80%",
     maxWidth: "1000px",
   },
-  controlButton: {
-    padding: "10px 15px",
-    backgroundColor: "#007bff",
-    color: "#fff",
-    border: "none",
-    borderRadius: "4px",
-    cursor: "pointer",
-    fontSize: "16px",
-    fontWeight: "bold",
-    transition: "background-color 0.3s ease",
-    margin: "5px",
-  },
+
   controlButtonHover: {
     backgroundColor: "#0056b3", // Hover時の色
   },
@@ -467,6 +462,31 @@ const styles = {
   },
   measureButtonHover: {
     backgroundColor: "#218838", // Hover時の色
+  },
+  controlButtonsContainer: {
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  controlButton: {
+    padding: "10px 15px",
+    backgroundColor: "#007bff",
+    color: "#fff",
+    border: "none",
+    borderRadius: "4px",
+    cursor: "pointer",
+    fontSize: "14px",
+    fontWeight: "bold",
+    transition: "background-color 0.3s ease",
+    width: "170px", // ボタン幅を一定に
+    height: "40px",
+    marginLeft: "10px",
+    marginRight: "10px",
+  },
+  controlButtonDisabled: {
+    backgroundColor: "#cccccc",
+    color: "#666666",
+    cursor: "not-allowed", // 無効時はクリック不可
   },
 };
 

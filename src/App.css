@@ -1,45 +1,30 @@
-
 .App {
     text-align: center;
     font-family: Arial, sans-serif;
+    position: relative;
 }
 
-/* ボタンコンテナを中央に配置 */
-.mode-selection-container {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    height: 100vh;
+/* 右上に表示されるポップアップ風のボタン */
+.popup-button-container {
+    position: absolute;
+    top: 20px;
+    right: 20px;
 }
 
-/* ボタンのスタイル */
-.button-container {
-    margin-top: 20px;
-}
-
-.styled-button {
+.popup-button {
     background-color: #4CAF50;
-    /* 緑のボタン */
-    border: none;
     color: white;
-    padding: 15px 30px;
-    text-align: center;
-    text-decoration: none;
-    display: inline-block;
-    font-size: 16px;
-    margin: 10px;
+    padding: 10px 20px;
+    border: none;
     border-radius: 5px;
-    transition: background-color 0.3s ease;
     cursor: pointer;
+    transition: background-color 0.3s ease;
 }
 
-.styled-button:hover {
+.popup-button:hover {
     background-color: #45a049;
-    /* ホバー時に少し暗く */
 }
 
-/* h2のスタイル */
 h2 {
     font-size: 24px;
     color: #333;

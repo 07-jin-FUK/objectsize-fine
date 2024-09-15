@@ -1,58 +1,50 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import ImageUploader from "./components/Uploader/ImageUploader";
 import Instructions from "./components/Instructions/Instructions";
-import Title from "./components/Common/Title"; // タイトルコンポーネントをインポート
+import Title from "./components/Common/Title";
 import ThreeScene from "./components/ThreeD/ThreeScene";
-import SizeMeasurement from "./components/ThreeD/SizeMeasurement"; // パスを更新
-
-import "./App.css"; // CSSファイルをインポート
+import SizeMeasurement from "./components/ThreeD/SizeMeasurement";
+import "./App.css";
 
 function App() {
-  const [mode, setMode] = useState(null); // 3Dか2Dのモードを選択
+  const [mode, setMode] = useState("3D"); // デフォルトで3Dモードを選択
+
+  useEffect(() => {
+    // ページを開いた際に3Dモードが自動で表示される
+    setMode("3D");
+  }, []);
 
   const handleModeSelection = (selectedMode) => {
-    setMode(selectedMode); // モードを選択
+    setMode(selectedMode);
   };
 
   return (
     <div className="App">
-      <Title /> {/* タイトルを表示 */}
-      {/* まだモードが選ばれていない場合、モード選択を表示 */}
-      {!mode && (
-        <div className="mode-selection-container">
-          <h2>どちらのモードで計測しますか？</h2>
-          <div className="button-container">
-            <button
-              className="styled-button"
-              onClick={() => handleModeSelection("3D")}
-            >
-              3Dサイズ測定
-            </button>
-            <button
-              className="styled-button"
-              onClick={() => handleModeSelection("2D")}
-            >
-              2Dサイズ測定
-            </button>
-          </div>
-        </div>
-      )}
-      {/* 3Dモードの場合 */}
+      <Title />
+
+      {/* 右上に2Dモードの切り替えボタン */}
+      <div className="popup-button-container">
+        <button
+          className="popup-button"
+          onClick={() => handleModeSelection(mode === "3D" ? "2D" : "3D")}
+        >
+          {mode === "3D" ? "2D計測モード" : "3D計測モード"}
+        </button>
+      </div>
+
       {mode === "3D" && (
         <div>
           <h2>3Dサイズ測定モード</h2>
-          <Instructions /> {/* 3D向けの説明を追加する場合 */}
-          <ThreeScene /> {/* Three.js を使った3Dサイズ測定 */}
-          <SizeMeasurement />{" "}
-          {/* 3Dサイズ測定のための画像アップロードとサイズ測定 */}
+          <Instructions />
+
+          <SizeMeasurement />
         </div>
       )}
-      {/* 2Dモードの場合 */}
       {mode === "2D" && (
         <div>
           <h2>2Dサイズ測定モード</h2>
-          <Instructions /> {/* 2D向けの説明 */}
-          <ImageUploader /> {/* 2Dサイズ測定のためのアップロード */}
+          <Instructions />
+          <ImageUploader />
         </div>
       )}
     </div>
