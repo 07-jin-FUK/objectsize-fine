@@ -1,6 +1,7 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef } from "react";
 import { useDropzone } from "react-dropzone";
 import axios from "axios";
+import "./SizeMeasurement.css"; // ここでCSSファイルを読み込む
 
 const SizeMeasurement = () => {
   const [imageSrc, setImageSrc] = useState(null);
@@ -23,7 +24,11 @@ const SizeMeasurement = () => {
       setScalePoints([]); // スケールポイントをリセット
       setMeasurePoints([]); // 測定ポイントをリセット
       updateMessage(
-        "画像がアップロードされました。千円札の左上をクリックしてください。"
+        <>
+          画像を確認しました。基準を測定します。
+          <br />
+          1点目：千円札の左上をクリックしてください。
+        </>
       );
       setIsReadyForMeasurement(false); // 計測ボタンを非表示に
       setResult(null); // 結果もリセット
@@ -54,7 +59,10 @@ const SizeMeasurement = () => {
         updateMessage("4点目: 千円札の左下をクリックしてください。");
       } else if (scalePoints.length === 3) {
         updateMessage(
-          "スケールが設定されました。次に測りたい2点をクリックしてください。"
+          <>
+            基準が設定されました。 <br />
+            次に測りたい目的物の片端をクリックしてください。
+          </>
         );
       }
     } else if (measurePoints.length < 2) {
@@ -64,7 +72,11 @@ const SizeMeasurement = () => {
         updateMessage("次に測定したい2点目をクリックしてください。");
       } else if (measurePoints.length === 1) {
         updateMessage(
-          "測定するポイントが選択されました。「計測を開始する」を押してください。"
+          <>
+            測定するポイントが選択されました。
+            <br />
+            「計測を開始する」を押してください。
+          </>
         );
         setIsReadyForMeasurement(true); // 計測ボタンを表示
       }
@@ -92,7 +104,7 @@ const SizeMeasurement = () => {
 
       if (response.data.measured_length) {
         setResult(response.data.measured_length); // 結果をセット
-        setMessage(`計測結果: ${response.data.measured_length} cm`); // 計測結果をメッセージに反映
+        setMessage(`計測結果:約 ${response.data.measured_length} cm`); // 計測結果をメッセージに反映
       } else {
         setMessage("計測が完了しましたが、結果が得られませんでした。");
       }
@@ -130,7 +142,11 @@ const SizeMeasurement = () => {
     // スケールポイントのみリセットし、測定ポイントは維持
     setScalePoints([]);
     updateMessage(
-      "スケールをリセットしました。千円札の左上をクリックしてください。"
+      <>
+        スケールをリセットしました。
+        <br />
+        千円札の左上をクリックしてください。
+      </>
     );
   };
 
@@ -138,7 +154,11 @@ const SizeMeasurement = () => {
     // 測定ポイントのみリセットし、スケールポイントは維持
     setMeasurePoints([]);
     updateMessage(
-      "測定ポイントをリセットしました。目的物の2点をクリックしてください。"
+      <>
+        測定ポイントをリセットしました。
+        <br />
+        目的物の片端をクリックしてください。
+      </>
     );
   };
 
@@ -159,7 +179,11 @@ const SizeMeasurement = () => {
       updateMessage("次に測定したい2点目をクリックしてください。");
     } else {
       updateMessage(
-        "測定するポイントが選択されました。「計測を開始する」を押してください。"
+        <>
+          測定するポイントが選択されました。
+          <br />
+          「計測を開始する」を押してください
+        </>
       );
     }
   };
@@ -173,59 +197,84 @@ const SizeMeasurement = () => {
   };
 
   return (
-    <div style={styles.container}>
+    <div className="container">
       <h2>3Dサイズ測定</h2>
 
       {/* Dropzone部分 */}
-      <div {...getRootProps()} style={styles.dropzone}>
+      <div {...getRootProps()} className="dropzone">
         <input {...getInputProps()} />
         <p>ここに画像をドラッグ＆ドロップ、またはクリックしてファイルを選択</p>
       </div>
 
       {/* メッセージを表示 */}
-      <div style={styles.messageContainer}>
+      <div className="messageContainer">
         <p>{message}</p>
+        {result && (
+          <div className="resultContainer">
+            <button className="allResetButton" onClick={resetEverything}>
+              違う写真でサイズを測る
+            </button>
+            <button className="sameResetButton" onClick={resetMeasurePoints}>
+              同じ写真で別の部分を計測する
+            </button>
+          </div>
+        )}
         {/* 画像の右側にボタンを縦に配置 */}
-        <div style={styles.controlButtonsContainer}>
-          <button style={styles.controlButton} onClick={undoLastAction}>
-            一つ戻る
-          </button>
-          <button
-            style={styles.controlButton}
-            onClick={resetScalePoints}
-            disabled={scalePoints.length === 0} // スケールが設定され始めたら有効化
-          >
-            スケールを測りなおす
-          </button>
-          <button
-            style={styles.controlButton}
-            onClick={resetMeasurePoints}
-            disabled={measurePoints.length === 0} // 測定が始まったら有効化
-          >
-            目的物を測りなおす
-          </button>
-        </div>
+        {imageSrc && (
+          <div className="controlButtonsContainer">
+            <button className="controlButton" onClick={undoLastAction}>
+              一つ戻る
+            </button>
+            <button
+              className={
+                scalePoints.length === 0
+                  ? "controlButton disabled"
+                  : "controlButton"
+              }
+              onClick={resetScalePoints}
+              disabled={scalePoints.length === 0}
+            >
+              基準再測定
+            </button>
+            <button
+              className={
+                measurePoints.length === 0
+                  ? "controlButton disabled"
+                  : "controlButton"
+              }
+              onClick={resetMeasurePoints}
+              disabled={measurePoints.length === 0}
+            >
+              目的物再測定
+            </button>
+            {isReadyForMeasurement && (
+              <button className="measureButton" onClick={startMeasurement}>
+                計測開始
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
       {/* アップロードされた画像を表示 */}
       {imageSrc && (
-        <div style={styles.imageContainer}>
+        <div className="imageContainer">
           <img
             id="uploaded-image"
             src={imageSrc}
             alt="Uploaded"
             ref={imageRef}
+            className="image"
             onClick={handleImageClick}
-            style={styles.image}
           />
 
           {/* スケール設定用のクリックされた場所にマーカーを表示（赤） */}
           {scalePoints.map((point, index) => (
             <div
               key={index}
+              className="pointMarker"
               style={{
-                ...styles.pointMarker,
-                backgroundColor: "red", // 赤色
+                backgroundColor: "red",
                 left:
                   point.x /
                     (imageRef.current.naturalWidth / imageRef.current.width) -
@@ -237,13 +286,14 @@ const SizeMeasurement = () => {
               }}
             />
           ))}
+
           {/* 測定用のクリックされた場所にマーカーを表示（青） */}
           {measurePoints.map((point, index) => (
             <div
               key={index}
+              className="pointMarker"
               style={{
-                ...styles.pointMarker,
-                backgroundColor: "blue", // 青色
+                backgroundColor: "blue",
                 left:
                   point.x /
                     (imageRef.current.naturalWidth / imageRef.current.width) -
@@ -255,12 +305,12 @@ const SizeMeasurement = () => {
               }}
             />
           ))}
+
           {/* 点と点を結ぶ線を描画 */}
           {scalePoints.length > 1 && (
-            <svg style={styles.svgOverlay}>
-              {/* スケールポイントの線描画 */}
+            <svg className="svgOverlay">
               {scalePoints.map((point, index) => {
-                if (index === 0) return null; // 最初の点は線を引かない
+                if (index === 0) return null;
                 return (
                   <line
                     key={index}
@@ -280,7 +330,7 @@ const SizeMeasurement = () => {
                       point.y /
                       (imageRef.current.naturalHeight / imageRef.current.height)
                     }
-                    style={styles.redLine} // スケール用の線を赤色に
+                    className="redLine"
                   />
                 );
               })}
@@ -303,9 +353,10 @@ const SizeMeasurement = () => {
                     scalePoints[0].y /
                     (imageRef.current.naturalHeight / imageRef.current.height)
                   }
-                  style={styles.redLine} // 赤色の線
+                  className="redLine"
                 />
               )}
+
               {/* 測定用のポイントの線描画（目的物の線） */}
               {measurePoints.length === 2 && (
                 <line
@@ -325,169 +376,15 @@ const SizeMeasurement = () => {
                     measurePoints[1].y /
                     (imageRef.current.naturalHeight / imageRef.current.height)
                   }
-                  style={styles.blueLine} // 青色の線
+                  className="blueLine"
                 />
               )}
             </svg>
           )}
         </div>
       )}
-
-      {/* 計測ボタンを表示 */}
-      {isReadyForMeasurement && (
-        <button style={styles.measureButton} onClick={startMeasurement}>
-          計測を開始する
-        </button>
-      )}
-
-      {/* 結果を表示 */}
-      {result && (
-        <div style={styles.resultContainer}>
-          <h3>計測結果: {result} cm</h3>
-          <button style={styles.controlButton} onClick={resetEverything}>
-            違う写真でサイズを測る
-          </button>
-          <button style={styles.controlButton} onClick={resetMeasurePoints}>
-            同じ写真で別の部分を計測する
-          </button>
-        </div>
-      )}
     </div>
   );
-};
-
-const styles = {
-  container: {
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    justifyContent: "flex-start",
-    textAlign: "center",
-    minHeight: "100vh",
-    paddingBottom: "50px",
-    overflowY: "auto",
-  },
-  dropzone: {
-    border: "2px dashed #cccccc",
-    borderRadius: "4px",
-    padding: "20px",
-    textAlign: "center",
-    cursor: "pointer",
-    marginBottom: "20px",
-    width: "60%",
-    maxWidth: "1000px",
-    margin: "0 auto",
-    marginTop: "20px",
-  },
-  imageContainer: {
-    position: "relative",
-    display: "flex", // フレックスボックスで画像とボタンを横並びに
-    justifyContent: "center",
-  },
-  image: {
-    cursor: "crosshair",
-    maxWidth: "100%",
-    maxHeight: "500px",
-  },
-  messageContainer: {
-    marginTop: "20px",
-    marginBottom: "20px",
-    padding: "10px",
-    backgroundColor: "#f8f8f8",
-    border: "1px solid #ccc",
-    borderRadius: "4px",
-    width: "80%",
-    maxWidth: "1000px",
-    fontWeight: "bold",
-    fontSize: "22px",
-    color: "red",
-  },
-  pointMarker: {
-    position: "absolute",
-    width: "12px",
-    height: "12px",
-    borderRadius: "50%",
-  },
-  svgOverlay: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    width: "100%",
-    height: "100%",
-    pointerEvents: "none",
-  },
-  redLine: {
-    stroke: "red",
-    strokeWidth: "4",
-    fill: "none",
-  },
-  blueLine: {
-    stroke: "blue",
-    strokeWidth: "4",
-    fill: "none",
-  },
-  measureButton: {
-    marginTop: "20px",
-    padding: "10px 20px",
-    backgroundColor: "#007bff",
-    color: "#fff",
-    border: "none",
-    borderRadius: "4px",
-    cursor: "pointer",
-  },
-  resultContainer: {
-    marginTop: "20px",
-    padding: "10px",
-    backgroundColor: "#f0f0f0",
-    border: "1px solid #ccc",
-    borderRadius: "4px",
-    width: "80%",
-    maxWidth: "1000px",
-  },
-
-  controlButtonHover: {
-    backgroundColor: "#0056b3", // Hover時の色
-  },
-  measureButton: {
-    marginTop: "20px",
-    padding: "10px 20px",
-    backgroundColor: "#28a745",
-    color: "#fff",
-    border: "none",
-    borderRadius: "4px",
-    cursor: "pointer",
-    fontSize: "16px",
-    fontWeight: "bold",
-    transition: "background-color 0.3s ease",
-  },
-  measureButtonHover: {
-    backgroundColor: "#218838", // Hover時の色
-  },
-  controlButtonsContainer: {
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  controlButton: {
-    padding: "10px 15px",
-    backgroundColor: "#007bff",
-    color: "#fff",
-    border: "none",
-    borderRadius: "4px",
-    cursor: "pointer",
-    fontSize: "14px",
-    fontWeight: "bold",
-    transition: "background-color 0.3s ease",
-    width: "170px", // ボタン幅を一定に
-    height: "40px",
-    marginLeft: "10px",
-    marginRight: "10px",
-  },
-  controlButtonDisabled: {
-    backgroundColor: "#cccccc",
-    color: "#666666",
-    cursor: "not-allowed", // 無効時はクリック不可
-  },
 };
 
 export default SizeMeasurement;
