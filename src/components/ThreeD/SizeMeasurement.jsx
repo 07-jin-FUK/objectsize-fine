@@ -194,6 +194,8 @@ const SizeMeasurement = () => {
     setMessage("画像をアップロードしてください。");
     setResult(null);
     setIsReadyForMeasurement(false);
+    setImageSrc(null); // 画像もリセット
+    setImageFile(null); // アップロードされたファイルもリセット
   };
 
   return (
