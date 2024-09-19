@@ -13,6 +13,8 @@ const SizeMeasurement = () => {
   const imageRef = useRef(null);
   const [imageFile, setImageFile] = useState(null); // アップロードされた画像ファイル
   const [messageHistory, setMessageHistory] = useState([]); // メッセージ履歴用
+  const [zoomPosition, setZoomPosition] = useState({ x: 0, y: 0 }); // ズーム領域の位置
+  const [isZoomed, setIsZoomed] = useState(false); // ズームが有効かどうか
 
   // 画像がアップロードされたときに呼ばれる関数
   const onDrop = (acceptedFiles) => {
@@ -198,6 +200,55 @@ const SizeMeasurement = () => {
     setImageFile(null); // アップロードされたファイルもリセット
   };
 
+  const handleMouseMove = (e) => {
+    if (!imageRef.current) return;
+
+    const rect = imageRef.current.getBoundingClientRect();
+    const scaleX = imageRef.current.naturalWidth / rect.width;
+    const scaleY = imageRef.current.naturalHeight / rect.height;
+    const x = (e.clientX - rect.left) * scaleX;
+    const y = (e.clientY - rect.top) * scaleY;
+
+    setZoomPosition({ x, y });
+    setIsZoomed(true); // マウスが動くたびにズームを表示
+  };
+
+  const handleMouseLeave = () => {
+    setIsZoomed(false); // マウスが画像を離れたらズームを解除
+  };
+
+  const handleZoomedClick = (e) => {
+    if (!imageRef.current) return;
+
+    const rect = imageRef.current.getBoundingClientRect();
+
+    // クリック位置（ズーム状態）
+    const clickX = e.clientX - rect.left;
+    const clickY = e.clientY - rect.top;
+
+    // ズーム倍率（例: 600%に拡大されている）
+    const zoomScale = 6; // backgroundSize: '600%' から計算
+
+    // background-position のオフセットを取得する
+    const backgroundPosX =
+      (zoomPosition.x / imageRef.current.naturalWidth) * 100;
+    const backgroundPosY =
+      (zoomPosition.y / imageRef.current.naturalHeight) * 100;
+
+    // ズーム状態から元の画像の座標に補正
+    const adjustedX = (clickX + backgroundPosX * rect.width) / zoomScale;
+    const adjustedY = (clickY + backgroundPosY * rect.height) / zoomScale;
+
+    // 元の画像上での正しい位置を取得
+    const scaleX = imageRef.current.naturalWidth / rect.width;
+    const scaleY = imageRef.current.naturalHeight / rect.height;
+    const originalX = adjustedX * scaleX;
+    const originalY = adjustedY * scaleY;
+
+    // 正しい位置にマーカーを設定
+    setScalePoints([...scalePoints, { x: originalX, y: originalY }]);
+  };
+
   return (
     <div className="container">
       <h2>3Dサイズ測定</h2>
@@ -268,7 +319,33 @@ const SizeMeasurement = () => {
             ref={imageRef}
             className="image"
             onClick={handleImageClick}
+            onMouseMove={handleMouseMove}
+            onMouseLeave={handleMouseLeave}
           />
+
+          {/* ズーム領域を表示 */}
+          {isZoomed && (
+            <div
+              className="zoomOverlay"
+              style={{
+                top: `${
+                  zoomPosition.y /
+                    (imageRef.current.naturalHeight / imageRef.current.height) -
+                  50
+                }px`,
+                left: `${
+                  zoomPosition.x /
+                    (imageRef.current.naturalWidth / imageRef.current.width) -
+                  50
+                }px`,
+                backgroundImage: `url(${imageSrc})`,
+                backgroundPosition: `${
+                  (zoomPosition.x / imageRef.current.naturalWidth) * 100
+                }% ${(zoomPosition.y / imageRef.current.naturalHeight) * 100}%`,
+                backgroundSize: "600%", // 拡大率
+              }}
+            ></div>
+          )}
 
           {/* スケール設定用のクリックされた場所にマーカーを表示（赤） */}
           {scalePoints.map((point, index) => (

@@ -156,3 +156,20 @@
     align-items: center;
     margin-bottom: 10px;
 }
+
+.zoomOverlay {
+    position: absolute;
+    width: 100px;
+    height: 100px;
+    border: 2px solid black;
+    border-radius: 50%;
+    overflow: hidden;
+    pointer-events: none;
+}
+
+.zoomedImage {
+    position: absolute;
+    width: 400%;
+    /* 拡大率 */
+    height: 400%;
+}
