@@ -13,8 +13,8 @@ const SizeMeasurement = () => {
   const imageRef = useRef(null);
   const [imageFile, setImageFile] = useState(null); // アップロードされた画像ファイル
   const [messageHistory, setMessageHistory] = useState([]); // メッセージ履歴用
-  const [zoomPosition, setZoomPosition] = useState({ x: 0, y: 0 }); // ズーム領域の位置
-  const [isZoomed, setIsZoomed] = useState(false); // ズームが有効かどうか
+  const [measurementLogs, setMeasurementLogs] = useState([]); // 計測結果のログを管理
+  const [currentLocation, setCurrentLocation] = useState(""); // 入力ボックスの値を管理
 
   // 画像がアップロードされたときに呼ばれる関数
   const onDrop = (acceptedFiles) => {
@@ -200,53 +200,19 @@ const SizeMeasurement = () => {
     setImageFile(null); // アップロードされたファイルもリセット
   };
 
-  const handleMouseMove = (e) => {
-    if (!imageRef.current) return;
+  const saveMeasurementLog = () => {
+    if (!currentLocation) {
+      alert("計測場所を入力してください。");
+      return;
+    }
 
-    const rect = imageRef.current.getBoundingClientRect();
-    const scaleX = imageRef.current.naturalWidth / rect.width;
-    const scaleY = imageRef.current.naturalHeight / rect.height;
-    const x = (e.clientX - rect.left) * scaleX;
-    const y = (e.clientY - rect.top) * scaleY;
+    const newLog = {
+      location: currentLocation,
+      length: result,
+    };
 
-    setZoomPosition({ x, y });
-    setIsZoomed(true); // マウスが動くたびにズームを表示
-  };
-
-  const handleMouseLeave = () => {
-    setIsZoomed(false); // マウスが画像を離れたらズームを解除
-  };
-
-  const handleZoomedClick = (e) => {
-    if (!imageRef.current) return;
-
-    const rect = imageRef.current.getBoundingClientRect();
-
-    // クリック位置（ズーム状態）
-    const clickX = e.clientX - rect.left;
-    const clickY = e.clientY - rect.top;
-
-    // ズーム倍率（例: 600%に拡大されている）
-    const zoomScale = 6; // backgroundSize: '600%' から計算
-
-    // background-position のオフセットを取得する
-    const backgroundPosX =
-      (zoomPosition.x / imageRef.current.naturalWidth) * 100;
-    const backgroundPosY =
-      (zoomPosition.y / imageRef.current.naturalHeight) * 100;
-
-    // ズーム状態から元の画像の座標に補正
-    const adjustedX = (clickX + backgroundPosX * rect.width) / zoomScale;
-    const adjustedY = (clickY + backgroundPosY * rect.height) / zoomScale;
-
-    // 元の画像上での正しい位置を取得
-    const scaleX = imageRef.current.naturalWidth / rect.width;
-    const scaleY = imageRef.current.naturalHeight / rect.height;
-    const originalX = adjustedX * scaleX;
-    const originalY = adjustedY * scaleY;
-
-    // 正しい位置にマーカーを設定
-    setScalePoints([...scalePoints, { x: originalX, y: originalY }]);
+    setMeasurementLogs([...measurementLogs, newLog]); // 新しいログを追加
+    setCurrentLocation(""); // 入力ボックスをクリア
   };
 
   return (
@@ -272,7 +238,7 @@ const SizeMeasurement = () => {
             </button>
           </div>
         )}
-        {/* 画像の右側にボタンを縦に配置 */}
+
         {imageSrc && (
           <div className="controlButtonsContainer">
             <button className="controlButton" onClick={undoLastAction}>
@@ -319,33 +285,7 @@ const SizeMeasurement = () => {
             ref={imageRef}
             className="image"
             onClick={handleImageClick}
-            onMouseMove={handleMouseMove}
-            onMouseLeave={handleMouseLeave}
           />
-
-          {/* ズーム領域を表示 */}
-          {isZoomed && (
-            <div
-              className="zoomOverlay"
-              style={{
-                top: `${
-                  zoomPosition.y /
-                    (imageRef.current.naturalHeight / imageRef.current.height) -
-                  50
-                }px`,
-                left: `${
-                  zoomPosition.x /
-                    (imageRef.current.naturalWidth / imageRef.current.width) -
-                  50
-                }px`,
-                backgroundImage: `url(${imageSrc})`,
-                backgroundPosition: `${
-                  (zoomPosition.x / imageRef.current.naturalWidth) * 100
-                }% ${(zoomPosition.y / imageRef.current.naturalHeight) * 100}%`,
-                backgroundSize: "600%", // 拡大率
-              }}
-            ></div>
-          )}
 
           {/* スケール設定用のクリックされた場所にマーカーを表示（赤） */}
           {scalePoints.map((point, index) => (
@@ -459,6 +399,34 @@ const SizeMeasurement = () => {
                 />
               )}
             </svg>
+          )}
+
+          {/* 計測結果の表示と入力ボックス、保存ボタン */}
+          {result && (
+            <div className="measurementResult">
+              <p>計測結果: 約 {result} cm</p>
+              <input
+                type="text"
+                placeholder="計測場所を入力"
+                value={currentLocation}
+                onChange={(e) => setCurrentLocation(e.target.value)}
+              />
+              <button onClick={saveMeasurementLog}>一旦保存</button>
+            </div>
+          )}
+
+          {/* 保存された計測結果を表示 */}
+          {measurementLogs.length > 0 && (
+            <div className="measurementLogs">
+              <h3>計測履歴</h3>
+              <ul>
+                {measurementLogs.map((log, index) => (
+                  <li key={index}>
+                    場所: {log.location} - 計測結果: {log.length} cm
+                  </li>
+                ))}
+              </ul>
+            </div>
           )}
         </div>
       )}

@@ -163,13 +163,9 @@
     height: 100px;
     border: 2px solid black;
     border-radius: 50%;
+    /* ズームエリアを丸くする */
     overflow: hidden;
     pointer-events: none;
+    /* ズームエリアをクリック不可にする */
 }
 
-.zoomedImage {
-    position: absolute;
-    width: 400%;
-    /* 拡大率 */
-    height: 400%;
-}
