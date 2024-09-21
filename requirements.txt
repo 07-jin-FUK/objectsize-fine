@@ -1,5 +1,0 @@
-Flask==2.0.1
-flask-cors==3.0.10
-numpy>=1.22
-opencv-python-headless==4.5.4  # GUIが不要な場合、headlessバージョンが推奨されます
-setuptools>=58.0.0
