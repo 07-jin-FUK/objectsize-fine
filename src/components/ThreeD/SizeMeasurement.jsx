@@ -95,7 +95,7 @@ const SizeMeasurement = () => {
       formData.append("points", JSON.stringify(allPoints)); // クリックされたスケール4点と測定2点を追加
 
       const response = await axios.post(
-        "https://objectsize-fine.vercel.app/api/process-image",
+        "https://python-api-5yn6.onrender.com/process-image",
         formData,
         {
           headers: {
