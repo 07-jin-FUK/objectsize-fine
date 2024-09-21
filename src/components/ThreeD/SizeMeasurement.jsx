@@ -218,13 +218,11 @@ const SizeMeasurement = () => {
   return (
     <div className="container">
       <h2>3Dサイズ測定</h2>
-
       {/* Dropzone部分 */}
       <div {...getRootProps()} className="dropzone">
         <input {...getInputProps()} />
         <p>ここに画像をドラッグ＆ドロップ、またはクリックしてファイルを選択</p>
       </div>
-
       {/* メッセージを表示 */}
       <div className="messageContainer">
         <p>{message}</p>
@@ -274,7 +272,6 @@ const SizeMeasurement = () => {
           </div>
         )}
       </div>
-
       {/* アップロードされた画像を表示 */}
       {imageSrc && (
         <div className="imageContainer">
@@ -400,36 +397,40 @@ const SizeMeasurement = () => {
               )}
             </svg>
           )}
-
-          {/* 計測結果の表示と入力ボックス、保存ボタン */}
-          {result && (
-            <div className="measurementResult">
-              <p>計測結果: 約 {result} cm</p>
-              <input
-                type="text"
-                placeholder="計測場所を入力"
-                value={currentLocation}
-                onChange={(e) => setCurrentLocation(e.target.value)}
-              />
-              <button onClick={saveMeasurementLog}>一旦保存</button>
-            </div>
-          )}
-
-          {/* 保存された計測結果を表示 */}
-          {measurementLogs.length > 0 && (
-            <div className="measurementLogs">
-              <h3>計測履歴</h3>
-              <ul>
-                {measurementLogs.map((log, index) => (
-                  <li key={index}>
-                    場所: {log.location} - 計測結果: {log.length} cm
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
         </div>
       )}
+
+      {/* 保存された計測結果を表示 */}
+      <div className="measurementLogs">
+        <h3>計測履歴</h3>
+        {/* 計測結果の表示と入力ボックス、保存ボタン */}
+        {result && (
+          <div className="measurementResult">
+            <p>計測結果: 約 {result} cm</p>
+            <input
+              type="text"
+              placeholder="計測場所を入力"
+              value={currentLocation}
+              onChange={(e) => setCurrentLocation(e.target.value)}
+            />
+            <button onClick={saveMeasurementLog}>メモ</button>
+          </div>
+        )}
+        {measurementLogs.length > 0 ? (
+          <>
+            <h3>計測箇所</h3>
+            <ul>
+              {measurementLogs.map((log, index) => (
+                <li key={index}>
+                  {log.location} - {log.length} cm
+                </li>
+              ))}
+            </ul>
+          </>
+        ) : (
+          <p>計測履歴がありません</p>
+        )}
+      </div>
     </div>
   );
 };
