@@ -84,7 +84,6 @@ const ThreeDMeasurement = () => {
     }
   };
 
-  // 計測を開始
   const startMeasurement = async () => {
     console.log("計測を開始します...");
     try {
@@ -103,8 +102,26 @@ const ThreeDMeasurement = () => {
         }
       );
 
-      if (response.data.measured_size) {
-        updateMessage(`計測結果: 約 ${response.data.measured_size} cm`);
+      if (response.data) {
+        const {
+          top_vertical,
+          top_horizontal,
+          side_height,
+          top_area,
+          side_area,
+          volume,
+        } = response.data;
+
+        // レスポンスデータをメッセージとして更新
+        updateMessage(`
+          計測結果:
+          天面の縦サイズ: ${top_vertical},
+          天面の横サイズ: ${top_horizontal},
+          側面の高さ: ${side_height},
+          天面面積: ${top_area},
+          側面面積: ${side_area},
+          体積: ${volume}
+        `);
       } else {
         updateMessage("計測が完了しましたが、結果が得られませんでした。");
       }
