@@ -1,31 +1,51 @@
-.App {
-    text-align: center;
-    font-family: Arial, sans-serif;
-    position: relative;
+.mode-selection-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 60%;
+    /* 画面の幅を60%に設定 */
+    margin: 0 auto;
+    /* 中央寄せ */
+    height: 80vh;
+    /* 画面全体の高さ */
+    box-sizing: border-box;
+    /* パディングやボーダーを含めた幅計算 */
 }
 
-/* 右上に表示されるポップアップ風のボタン */
-.popup-button-container {
-    position: absolute;
-    top: 20px;
-    right: 20px;
-}
-
-.popup-button {
-    background-color: #4CAF50;
-    color: white;
-    padding: 10px 20px;
-    border: none;
-    border-radius: 5px;
+.mode-selection-section {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
     cursor: pointer;
     transition: background-color 0.3s ease;
+    padding: 20px;
+    /* 余白を追加 */
 }
 
-.popup-button:hover {
-    background-color: #45a049;
+.mode-selection-section:hover {
+    background-color: #f0f0f0;
+    /* ホバー時の背景色 */
+}
+
+.mode-image {
+    max-width: 300px;
+    /* 画像の最大幅を指定 */
+    height: 400px;
+    /* 高さは自動調整 */
+    border-radius: 10px;
+    margin-bottom: 20px;
 }
 
 h2 {
     font-size: 24px;
     color: #333;
+    margin-top: auto;
+    /* 余白を自動的に調整して説明文の位置を揃える */
+    margin-bottom: 20px;
+    /* 説明文の下に余白 */
+    text-align: center;
+    min-height: 50px;
+    /* 説明文の高さを統一するために最低高さを設定 */
 }
