@@ -25,7 +25,7 @@ function App() {
             onClick={() => handleModeSelection("flat")}
           >
             <img
-              src="/public/img/senen.jpg"
+              src="/img/senen.jpg"
               alt="平面サイズ測定"
               className="mode-image"
             />
@@ -36,7 +36,7 @@ function App() {
             onClick={() => handleModeSelection("3D")}
           >
             <img
-              src="/public/img/rittai.jpg"
+              src="/img/rittai.jpg"
               alt="立体サイズ測定"
               className="mode-image"
             />
