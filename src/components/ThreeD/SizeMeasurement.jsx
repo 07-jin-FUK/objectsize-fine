@@ -44,6 +44,19 @@ const SizeMeasurement = () => {
   const handleImageClick = (e) => {
     if (!imageRef.current) return;
 
+    fetch("https://python-api-5yn6.onrender.com/warmup", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ message: "warm up server" }),
+    })
+      .then(() => {
+        console.log("Server warmed up");
+      })
+      .catch((error) => {
+        console.error("Error warming up server:", error);
+      });
     const rect = imageRef.current.getBoundingClientRect();
     const scaleX = imageRef.current.naturalWidth / rect.width;
     const scaleY = imageRef.current.naturalHeight / rect.height;
