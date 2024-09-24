@@ -146,7 +146,6 @@ const ThreeDMeasurement = () => {
 
   return (
     <div className="container">
-      <h2>3Dサイズ測定</h2>
       <div {...getRootProps()} className="dropzone">
         <input {...getInputProps()} />
         <p>ここに画像をドラッグ＆ドロップ、またはクリックしてファイルを選択</p>

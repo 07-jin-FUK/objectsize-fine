@@ -230,7 +230,7 @@ const SizeMeasurement = () => {
 
   return (
     <div className="container">
-      <h2>3Dサイズ測定</h2>
+     
       {/* Dropzone部分 */}
       <div {...getRootProps()} className="dropzone">
         <input {...getInputProps()} />

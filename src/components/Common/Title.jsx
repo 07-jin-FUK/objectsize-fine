@@ -4,7 +4,7 @@ const Title = () => {
   return (
     <div style={styles.container}>
       <h1 style={styles.title}>SizeSnap</h1> {/* タイトルをここで設定 */}
-      <p style={styles.subtitle}>身近なもので簡単サイズ測定</p>
+      <p style={styles.subtitle}>千円札で簡単サイズ測定</p>
     </div>
   );
 };
