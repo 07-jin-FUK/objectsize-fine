@@ -11,6 +11,30 @@ const ThreeDMeasurement = () => {
   const [isReadyForMeasurement, setIsReadyForMeasurement] = useState(false);
   const imageRef = useRef(null);
   const [imageFile, setImageFile] = useState(null);
+  const [result, setResult] = useState(null); // 計測結果
+  const [measurementLogs, setMeasurementLogs] = useState([]); // 計測結果のログを管理
+  const [currentLocation, setCurrentLocation] = useState(""); // 入力ボックスの値を管理
+
+  // 計測結果を保存する機能
+  const saveMeasurementLog = () => {
+    if (!currentLocation) {
+      alert("計測場所を入力してください。");
+      return;
+    }
+
+    const newLog = {
+      location: currentLocation,
+      top_vertical: result?.top_vertical || "N/A",
+      top_horizontal: result?.top_horizontal || "N/A",
+      side_height: result?.side_height || "N/A",
+      top_area: result?.top_area || "N/A",
+      side_area: result?.side_area || "N/A",
+      volume: result?.volume || "N/A",
+    };
+
+    setMeasurementLogs([...measurementLogs, newLog]); // 新しいログを追加
+    setCurrentLocation(""); // 入力ボックスをクリア
+  };
 
   const onDrop = (acceptedFiles) => {
     const file = acceptedFiles[0];
@@ -135,6 +159,16 @@ const ThreeDMeasurement = () => {
           側面面積: ${side_area},
           体積: ${volume}
         `);
+
+        // resultに計測結果をセット
+        setResult({
+          top_vertical,
+          top_horizontal,
+          side_height,
+          top_area,
+          side_area,
+          volume,
+        });
       } else {
         updateMessage("計測が完了しましたが、結果が得られませんでした。");
       }
@@ -336,6 +370,48 @@ const ThreeDMeasurement = () => {
           </svg>
         </div>
       )}
+      <div>
+        {result && (
+          <div className="measurementResult">
+            <p>計測結果:</p>
+            <ul>
+              <li>天面の縦サイズ: {result.top_vertical} </li>
+              <li>天面の横サイズ: {result.top_horizontal} </li>
+              <li>側面の高さ: {result.side_height} </li>
+              <li>天面面積: {result.top_area} </li>
+              <li>側面面積: {result.side_area} </li>
+              <li>体積: {result.volume} </li>
+            </ul>
+            <input
+              type="text"
+              placeholder="計測場所を入力"
+              value={currentLocation}
+              onChange={(e) => setCurrentLocation(e.target.value)}
+            />
+            <button onClick={saveMeasurementLog}>メモ</button>
+          </div>
+        )}
+
+        {/* 保存された計測結果を表示 */}
+        <div className="measurementLogs">
+          <h3>計測履歴</h3>
+          {measurementLogs.length > 0 ? (
+            <ul>
+              {measurementLogs.map((log, index) => (
+                <li key={index}>
+                  {log.location}: <br />縦 {log.top_vertical} , <br /> 横{" "}
+                  {log.top_horizontal} , <br /> 高さ {log.side_height} , <br />
+                  天面面積 {log.top_area} , <br /> 側面面積 {log.side_area} ,{" "}
+                  <br />
+                  体積 {log.volume}
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p>計測履歴がありません</p>
+          )}
+        </div>
+      </div>
     </div>
   );
 };

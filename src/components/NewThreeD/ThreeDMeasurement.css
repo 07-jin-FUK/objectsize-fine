@@ -152,88 +152,88 @@
 
 .resultContainer {
     display: flex;
-    justify-content: center;
-    align-items: center;
-    margin-bottom: 20px;
-}
-
-/* メモ欄と計測結果のコンテナ */
-.measurementResult {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    background-color: #f9f9f9;
-    border: 1px solid #ddd;
-    padding: 15px;
-    border-radius: 8px;
-    margin-bottom: 20px;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-}
-
-.measurementResult p {
-    font-size: 18px;
-    color: #333;
-}
-
-.measurementResult input {
-    width: 20%;
-    padding: 10px;
-    font-size: 16px;
-    border: 1px solid #ccc;
-    border-radius: 5px;
-
-    margin-left: 20px;
-}
-
-.measurementResult button {
-    padding: 10px 20px;
-    font-size: 16px;
-    background-color: #4caf50;
-    color: white;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    margin-left: 20px;
-    transition: background-color 0.3s ease;
-}
-
-.measurementResult button:hover {
-    background-color: #45a049;
-}
-
-/* 計測履歴の枠組み */
-.measurementLogs {
-    background-color: #fff;
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    padding: 15px;
-    margin-top: 20px;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-    width: 60%;
-    max-width: 800px;
-}
-
-.measurementLogs h3 {
-    font-size: 20px;
-    margin-bottom: 15px;
-    color: #333;
-    text-align: center;
-}
-
-.measurementLogs ul {
-    list-style: none;
-    padding: 0;
-}
-
-.measurementLogs li {
-    padding: 10px;
-    font-size: 16px;
-    background-color: #f7f7f7;
-    border: 1px solid #ddd;
-    margin-bottom: 10px;
-    border-radius: 5px;
-}
-
-.measurementLogs li:nth-child(odd) {
-    background-color: #f0f0f0;
-}
+        justify-content: center;
+        align-items: center;
+        margin-bottom: 20px;
+    }
+    
+    /* メモ欄と計測結果のコンテナ */
+    .measurementResult {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        background-color: #f9f9f9;
+        border: 1px solid #ddd;
+        padding: 15px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    }
+    
+    .measurementResult p {
+        font-size: 18px;
+        color: #333;
+    }
+    
+    .measurementResult input {
+        width: 20%;
+        padding: 10px;
+        font-size: 16px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+    
+        margin-left: 20px;
+    }
+    
+    .measurementResult button {
+        padding: 10px 20px;
+        font-size: 16px;
+        background-color: #4caf50;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        margin-left: 20px;
+        transition: background-color 0.3s ease;
+    }
+    
+    .measurementResult button:hover {
+        background-color: #45a049;
+    }
+    
+    /* 計測履歴の枠組み */
+    .measurementLogs {
+        background-color: #fff;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        padding: 15px;
+        margin-top: 20px;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        width: 60%;
+        max-width: 800px;
+    }
+    
+    .measurementLogs h3 {
+        font-size: 20px;
+        margin-bottom: 15px;
+        color: #333;
+        text-align: center;
+    }
+    
+    .measurementLogs ul {
+        list-style: none;
+        padding: 0;
+    }
+    
+    .measurementLogs li {
+        padding: 10px;
+        font-size: 16px;
+        background-color: #f7f7f7;
+        border: 1px solid #ddd;
+        margin-bottom: 10px;
+        border-radius: 5px;
+    }
+    
+    .measurementLogs li:nth-child(odd) {
+        background-color: #f0f0f0;
+    }
