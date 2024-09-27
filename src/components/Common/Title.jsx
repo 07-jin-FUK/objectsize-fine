@@ -13,7 +13,7 @@ const styles = {
   container: {
     textAlign: "center",
     marginBottom: "20px",
-    color: "#333", // タイトルの色をカスタマイズ
+    color: "#333",
   },
   title: {
     fontSize: "3em",

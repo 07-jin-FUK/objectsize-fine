@@ -125,7 +125,7 @@ const Instructions = ({ mode }) => {
             />
             <span style={styles.arrow}>→</span>
             <img
-              src="/img/example3D_4.jpg"
+              src="/img/entyuu.jpg"
               alt="マーク例"
               style={styles.exampleImage}
             />

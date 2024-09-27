@@ -14,6 +14,7 @@ const ThreeDMeasurement = () => {
   const [result, setResult] = useState(null); // 計測結果
   const [measurementLogs, setMeasurementLogs] = useState([]); // 計測結果のログを管理
   const [currentLocation, setCurrentLocation] = useState(""); // 入力ボックスの値を管理
+  const [isLoading, setIsLoading] = useState(false); // ローディング状態を追加
 
   // 計測結果を保存する機能
   const saveMeasurementLog = () => {
@@ -44,7 +45,7 @@ const ThreeDMeasurement = () => {
       setImageSrc(reader.result);
       setRedPoints([]); // 千円札ポイントをリセット
       setBluePoints([]); // 目的物ポイントをリセット
-      updateMessage("1点目：千円札の左上をクリックしてください。");
+      updateMessage("1点目：千円札を縦に見て右上をクリックしてください。");
       setIsReadyForMeasurement(false);
     };
     reader.readAsDataURL(file);
@@ -80,11 +81,11 @@ const ThreeDMeasurement = () => {
       setRedPoints([...redPoints, { x, y }]);
 
       const redPointMessages = [
-        "2点目: 千円札の中央上をクリックしてください。",
-        "3点目: 千円札の右上をクリックしてください。",
-        "4点目: 千円札の右下をクリックしてください。",
-        "5点目: 千円札の中央下をクリックしてください。",
-        "6点目: 千円札の左下をクリックしてください。",
+        "2点目: 千円札の中央右をクリックしてください。",
+        "3点目: 千円札の右下をクリックしてください。",
+        "4点目: 千円札の左下をクリックしてください。",
+        "5点目: 千円札の中央左をクリックしてください。",
+        "6点目: 千円札の左上をクリックしてください。",
       ];
 
       updateMessage(redPointMessages[redPoints.length]);
@@ -123,6 +124,9 @@ const ThreeDMeasurement = () => {
 
   const startMeasurement = async () => {
     console.log("計測を開始します...");
+    setIsLoading(true); // 計測開始時にローディング状態にする
+    updateMessage("現在計測中です。少々お待ちください...");
+
     try {
       const formData = new FormData();
       formData.append("image", imageFile);
@@ -150,15 +154,18 @@ const ThreeDMeasurement = () => {
         } = response.data;
 
         // レスポンスデータをメッセージとして更新
-        updateMessage(`
-          計測結果:
-          天面の縦サイズ: ${top_vertical},
-          天面の横サイズ: ${top_horizontal},
-          側面の高さ: ${side_height},
-          天面面積: ${top_area},
-          側面面積: ${side_area},
-          体積: ${volume}
-        `);
+        updateMessage(
+          <>
+            計測結果:
+            <br />
+            天面の縦サイズ: ${top_vertical},<br />
+            天面の横サイズ: ${top_horizontal},<br />
+            側面の高さ: ${side_height},<br />
+            天面面積: ${top_area},<br />
+            側面面積: ${side_area},<br />
+            体積: ${volume}
+          </>
+        );
 
         // resultに計測結果をセット
         setResult({
@@ -175,7 +182,42 @@ const ThreeDMeasurement = () => {
     } catch (error) {
       console.error("計測中にエラーが発生しました:", error);
       updateMessage("計測中にエラーが発生しました。");
+    } finally {
+      setIsLoading(false); // 計測完了後にローディングを解除
     }
+  };
+  const resetRedPoints = () => {
+    // スケールポイントのみリセットし、測定ポイントは維持
+    setRedPoints([]);
+    updateMessage(
+      <>
+        スケールをリセットしました。
+        <br />
+        千円札の左上をクリックしてください。
+      </>
+    );
+  };
+
+  const resetBluePoints = () => {
+    // 測定ポイントのみリセットし、スケールポイントは維持
+    setBluePoints([]);
+    updateMessage(
+      <>
+        測定ポイントをリセットしました。
+        <br />
+        目的物の片端をクリックしてください。
+      </>
+    );
+  };
+
+  const resetEverything = () => {
+    setRedPoints([]);
+    setBluePoints([]);
+    updateMessage("画像をアップロードしてください。");
+    setResult(null);
+    setIsReadyForMeasurement(false);
+    setImageSrc(null); // 画像もリセット
+    setImageFile(null); // アップロードされたファイルもリセット
   };
 
   return (
@@ -186,10 +228,52 @@ const ThreeDMeasurement = () => {
       </div>
       <div className="messageContainer">
         <p>{message}</p>
-        {isReadyForMeasurement && (
-          <button className="measureButton" onClick={startMeasurement}>
-            計測開始
-          </button>
+        {isLoading && (
+          <div className="loadingContainer">
+            <div className="loader"></div>
+          </div>
+        )}
+        {result && (
+          <div className="resultContainer">
+            <button className="allResetButton" onClick={resetEverything}>
+              違う写真でサイズを測る
+            </button>
+            <button className="sameResetButton" onClick={resetBluePoints}>
+              同じ写真で別の部分を計測する
+            </button>
+          </div>
+        )}
+
+        {imageSrc && (
+          <div className="controlButtonsContainer">
+            <button
+              className={
+                redPoints.length === 0
+                  ? "controlButton disabled"
+                  : "controlButton"
+              }
+              onClick={resetRedPoints}
+              disabled={redPoints.length === 0}
+            >
+              基準再測定
+            </button>
+            <button
+              className={
+                bluePoints.length === 0
+                  ? "controlButton disabled"
+                  : "controlButton"
+              }
+              onClick={resetBluePoints}
+              disabled={bluePoints.length === 0}
+            >
+              目的物再測定
+            </button>
+            {isReadyForMeasurement && (
+              <button className="measureButton" onClick={startMeasurement}>
+                計測開始
+              </button>
+            )}
+          </div>
         )}
       </div>
       {imageSrc && (
@@ -370,7 +454,7 @@ const ThreeDMeasurement = () => {
           </svg>
         </div>
       )}
-      <div>
+      <div className="measurementLogs">
         {result && (
           <div className="measurementResult">
             <p>計測結果:</p>
@@ -393,7 +477,7 @@ const ThreeDMeasurement = () => {
         )}
 
         {/* 保存された計測結果を表示 */}
-        <div className="measurementLogs">
+        <>
           <h3>計測履歴</h3>
           {measurementLogs.length > 0 ? (
             <ul>
@@ -410,7 +494,7 @@ const ThreeDMeasurement = () => {
           ) : (
             <p>計測履歴がありません</p>
           )}
-        </div>
+        </>
       </div>
     </div>
   );

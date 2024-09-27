@@ -15,6 +15,7 @@ const SizeMeasurement = () => {
   const [messageHistory, setMessageHistory] = useState([]); // メッセージ履歴用
   const [measurementLogs, setMeasurementLogs] = useState([]); // 計測結果のログを管理
   const [currentLocation, setCurrentLocation] = useState(""); // 入力ボックスの値を管理
+  const [isLoading, setIsLoading] = useState(false); // ローディング状態を追加
 
   // 画像がアップロードされたときに呼ばれる関数
   const onDrop = (acceptedFiles) => {
@@ -101,6 +102,9 @@ const SizeMeasurement = () => {
   // 画像をPythonバックエンドに送信して処理を依頼
   const startMeasurement = async () => {
     console.log("スケール計測の準備中...");
+    setIsLoading(true); // 計測開始時にローディング状態にする
+    setMessage("現在計測中です。少々お待ちください...");
+
     try {
       const formData = new FormData();
       formData.append("image", imageFile); // アップロードした画像を追加
@@ -126,31 +130,14 @@ const SizeMeasurement = () => {
     } catch (error) {
       console.error("計測中にエラーが発生しました:", error);
       setMessage("計測中にエラーが発生しました。");
+    } finally {
+      setIsLoading(false); // 計測完了後にローディングを解除
     }
   };
 
   const updateMessage = (newMessage) => {
     setMessageHistory([...messageHistory, newMessage]); // 新しいメッセージを履歴に追加
     setMessage(newMessage); // メッセージを更新
-  };
-  // ボタン機能
-  const undoLastAction = () => {
-    if (measurePoints.length > 0) {
-      // スケール設定中の場合、スケールポイントを戻す
-      setMeasurePoints(measurePoints.slice(0, -1));
-      updateMessageBasedOnMeasurePoints(measurePoints.length - 1);
-    } else if (scalePoints.length > 0) {
-      // 測定中の場合、測定ポイントを戻す
-      setScalePoints(scalePoints.slice(0, -1));
-      updateMessageBasedOnScalePoints(scalePoints.length - 1);
-    }
-
-    // メッセージ履歴も一つ戻す
-    if (messageHistory.length > 1) {
-      const newHistory = messageHistory.slice(0, -1); // 最新のメッセージを削除
-      setMessage(newHistory[newHistory.length - 1]); // 一つ前のメッセージに戻す
-      setMessageHistory(newHistory); // 更新した履歴を保存
-    }
   };
 
   const resetScalePoints = () => {
@@ -175,32 +162,6 @@ const SizeMeasurement = () => {
         目的物の片端をクリックしてください。
       </>
     );
-  };
-
-  const updateMessageBasedOnScalePoints = (remainingPoints) => {
-    if (remainingPoints === 3) {
-      updateMessage("4点目: 千円札の左下をクリックしてください。");
-    } else if (remainingPoints === 2) {
-      updateMessage("3点目: 千円札の右下をクリックしてください。");
-    } else if (remainingPoints === 1) {
-      updateMessage("2点目: 千円札の右上をクリックしてください。");
-    } else if (remainingPoints === 0) {
-      updateMessage("1点目: 千円札の左上をクリックしてください。");
-    }
-  };
-
-  const updateMessageBasedOnMeasurePoints = (remainingPoints) => {
-    if (remainingPoints === 1) {
-      updateMessage("次に測定したい2点目をクリックしてください。");
-    } else {
-      updateMessage(
-        <>
-          測定するポイントが選択されました。
-          <br />
-          「計測を開始する」を押してください
-        </>
-      );
-    }
   };
 
   const resetEverything = () => {
@@ -230,7 +191,6 @@ const SizeMeasurement = () => {
 
   return (
     <div className="container">
-     
       {/* Dropzone部分 */}
       <div {...getRootProps()} className="dropzone">
         <input {...getInputProps()} />
@@ -239,6 +199,11 @@ const SizeMeasurement = () => {
       {/* メッセージを表示 */}
       <div className="messageContainer">
         <p>{message}</p>
+        {isLoading && (
+          <div className="loadingContainer">
+            <div className="loader"></div>
+          </div>
+        )}
         {result && (
           <div className="resultContainer">
             <button className="allResetButton" onClick={resetEverything}>
@@ -252,9 +217,6 @@ const SizeMeasurement = () => {
 
         {imageSrc && (
           <div className="controlButtonsContainer">
-            <button className="controlButton" onClick={undoLastAction}>
-              一つ戻る
-            </button>
             <button
               className={
                 scalePoints.length === 0

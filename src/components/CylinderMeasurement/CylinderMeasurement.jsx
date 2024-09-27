@@ -14,6 +14,7 @@ const CylinderMeasurement = () => {
   const [result, setResult] = useState(null); // 計測結果
   const [measurementLogs, setMeasurementLogs] = useState([]); // 計測結果のログを管理
   const [currentLocation, setCurrentLocation] = useState(""); // 入力ボックスの値を管理
+  const [isLoading, setIsLoading] = useState(false); // ローディング状態を追加
 
   // 計測結果を保存する機能
   const saveMeasurementLog = () => {
@@ -54,6 +55,19 @@ const CylinderMeasurement = () => {
   // 画像上でクリックして位置を取得
   const handleImageClick = (e) => {
     if (!imageRef.current) return;
+    fetch("https://python-api-5yn6.onrender.com/warmup", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ message: "warm up server" }),
+    })
+      .then(() => {
+        console.log("Server warmed up");
+      })
+      .catch((error) => {
+        console.error("Error warming up server:", error);
+      });
 
     const rect = imageRef.current.getBoundingClientRect();
     const scaleX = imageRef.current.naturalWidth / rect.width;
@@ -107,6 +121,9 @@ const CylinderMeasurement = () => {
 
   const startMeasurement = async () => {
     console.log("円柱の計測を開始します...");
+    setIsLoading(true); // 計測開始時にローディング状態にする
+    updateMessage("現在計測中です。少々お待ちください...");
+
     try {
       const formData = new FormData();
       formData.append("image", imageFile);
@@ -127,13 +144,21 @@ const CylinderMeasurement = () => {
         const { diameter, height, top_area, side_area, volume } = response.data;
 
         // レスポンスデータをメッセージとして更新
-        updateMessage(`計測結果:
-          直径: ${diameter},
-          高さ: ${height},
-          天面積: ${top_area},
-          側面積: ${side_area},
-          体積: ${volume}
-        `);
+        updateMessage(
+          <>
+            計測結果:
+            <br />
+            直径: {diameter}
+            <br />
+            高さ: {height}
+            <br />
+            天面積: {top_area}
+            <br />
+            側面積: {side_area}
+            <br />
+            体積: {volume}
+          </>
+        );
 
         // resultに計測結果をセット
         setResult({
@@ -149,6 +174,8 @@ const CylinderMeasurement = () => {
     } catch (error) {
       console.error("計測中にエラーが発生しました:", error);
       updateMessage("計測中にエラーが発生しました。");
+    } finally {
+      setIsLoading(false); // 計測完了後にローディングを解除
     }
   };
 
@@ -296,6 +323,41 @@ const CylinderMeasurement = () => {
     return null;
   };
 
+  const resetRedPoints = () => {
+    setRedPoints([]);
+    setBluePoints([]); //スケールをもとにｂの0点をつくるから
+    updateMessage(
+      <>
+        スケールをリセットしました。
+        <br />
+        千円札の左上をクリックしてください。
+      </>
+    );
+  };
+
+  const resetBluePoints = () => {
+    if (bluePoints.length > 0) {
+      setBluePoints([bluePoints[0]]); // bluePointsの0番目の点だけを残してリセット
+    }
+    updateMessage(
+      <>
+        測定ポイントをリセットしました。
+        <br />
+        目的物の片端をクリックしてください。
+      </>
+    );
+  };
+
+  const resetEverything = () => {
+    setRedPoints([]);
+    setBluePoints([]);
+    updateMessage("画像をアップロードしてください。");
+    setResult(null);
+    setIsReadyForMeasurement(false);
+    setImageSrc(null); // 画像もリセット
+    setImageFile(null); // アップロードされたファイルもリセット
+  };
+
   return (
     <div className="container">
       <div {...getRootProps()} className="dropzone">
@@ -304,10 +366,52 @@ const CylinderMeasurement = () => {
       </div>
       <div className="messageContainer">
         <p>{message}</p>
-        {isReadyForMeasurement && (
-          <button className="measureButton" onClick={startMeasurement}>
-            計測開始
-          </button>
+        {isLoading && (
+          <div className="loadingContainer">
+            <div className="loader"></div>
+          </div>
+        )}
+        {result && (
+          <div className="resultContainer">
+            <button className="allResetButton" onClick={resetEverything}>
+              違う写真でサイズを測る
+            </button>
+            <button className="sameResetButton" onClick={resetBluePoints}>
+              同じ写真で別の部分を計測する
+            </button>
+          </div>
+        )}
+
+        {imageSrc && (
+          <div className="controlButtonsContainer">
+            <button
+              className={
+                redPoints.length === 0
+                  ? "controlButton disabled"
+                  : "controlButton"
+              }
+              onClick={resetRedPoints}
+              disabled={redPoints.length === 0}
+            >
+              基準再測定
+            </button>
+            <button
+              className={
+                bluePoints.length === 0
+                  ? "controlButton disabled"
+                  : "controlButton"
+              }
+              onClick={resetBluePoints}
+              disabled={bluePoints.length === 0}
+            >
+              目的物再測定
+            </button>
+            {isReadyForMeasurement && (
+              <button className="measureButton" onClick={startMeasurement}>
+                計測開始
+              </button>
+            )}
+          </div>
         )}
       </div>
       {imageSrc && (
@@ -419,7 +523,7 @@ const CylinderMeasurement = () => {
           </svg>
         </div>
       )}
-      <div>
+      <div className="measurementLogs">
         {result && (
           <div className="measurementResult">
             <p>計測結果:</p>
@@ -441,7 +545,7 @@ const CylinderMeasurement = () => {
         )}
 
         {/* 保存された計測結果を表示 */}
-        <div className="measurementLogs">
+        <>
           <h3>計測履歴</h3>
           {measurementLogs.length > 0 ? (
             <ul>
@@ -456,7 +560,7 @@ const CylinderMeasurement = () => {
           ) : (
             <p>計測履歴がありません</p>
           )}
-        </div>
+        </>
       </div>
     </div>
   );
