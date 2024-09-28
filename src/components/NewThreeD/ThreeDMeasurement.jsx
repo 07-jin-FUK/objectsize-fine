@@ -158,12 +158,12 @@ const ThreeDMeasurement = () => {
           <>
             計測結果:
             <br />
-            天面の縦サイズ: ${top_vertical},<br />
-            天面の横サイズ: ${top_horizontal},<br />
-            側面の高さ: ${side_height},<br />
-            天面面積: ${top_area},<br />
-            側面面積: ${side_area},<br />
-            体積: ${volume}
+            天面の縦サイズ: {top_vertical},<br />
+            天面の横サイズ: {top_horizontal},<br />
+            側面の高さ: {side_height},<br />
+            天面面積: {top_area},<br />
+            側面面積: {side_area},<br />
+            体積: {volume}
           </>
         );
 
