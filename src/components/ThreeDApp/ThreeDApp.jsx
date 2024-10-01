@@ -40,7 +40,7 @@ const ThreeDApp = () => {
   const [isSingleSided, setIsSingleSided] = useState(false); // デフォルトは両面
   const [leftSideColor, setLeftSideColor] = useState("#f0f0f0");
   const [rightSideColor, setRightSideColor] = useState("#f0f0f0");
-  const [panelHeight, setPanelHeight] = useState(200); // 初期高さ
+  const [panelHeight, setPanelHeight] = useState(300); // 初期高さ
   const [scrollTop, setScrollTop] = useState(0); // スクロール位置
   const [isResizing, setIsResizing] = useState(false); // リサイズ中の状態
   const operationPanelRef = useRef(null);
@@ -59,10 +59,6 @@ const ThreeDApp = () => {
     { name: "茶色", color: "#8b4513" },
   ];
 
-  const toggleSpaceLock = () => {
-    setIsSpaceLocked((prev) => !prev);
-  };
-
   const showPanel = (panelType) => {
     setActivePanel(panelType);
   };
@@ -73,6 +69,7 @@ const ThreeDApp = () => {
 
   const toggleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen);
+    rendererRef.current.render(sceneRef.current, cameraRef.current);
   };
 
   const handleMouseDown = (e) => {
@@ -87,14 +84,28 @@ const ThreeDApp = () => {
       const deltaX = e.clientX - dragStart.current.x;
       const deltaY = e.clientY - dragStart.current.y;
 
-      // 空間の位置を更新する
-      setSpacePosition((prev) => ({
-        x: prev.x + deltaX * 0.5, // マウスの動きに応じて空間を移動させる
-        y: prev.y - deltaY * 0.5,
-        z: prev.z,
-      }));
+      // 空間の位置を新しい位置に更新
+      setSpacePosition((prev) => {
+        const newPosition = {
+          x: prev.x + deltaX * 0.5, // ドラッグの移動に対するスケーリング調整
+          y: prev.y - deltaY * 0.5,
+          z: prev.z, // z座標は変更しない
+        };
 
+        // オブジェクトを空間の動きに合わせて移動させる
+        objectsRef.current.forEach((obj) => {
+          obj.object.position.x += deltaX * 0.25; // オブジェクトのX位置を変更
+          obj.object.position.y -= deltaY * 0.25; // オブジェクトのY位置を変更
+        });
+
+        return newPosition;
+      });
+
+      // ドラッグ開始位置を更新
       dragStart.current = { x: e.clientX, y: e.clientY };
+
+      // 再レンダリング
+      rendererRef.current.render(sceneRef.current, cameraRef.current);
     }
   };
 
@@ -102,6 +113,18 @@ const ThreeDApp = () => {
     if (isSpaceLocked) {
       setIsDragging(false);
     }
+    rendererRef.current.render(sceneRef.current, cameraRef.current);
+  };
+
+  // 既存の関数がある部分に追加します
+  const resetCameraPosition = () => {
+    // カメラの初期位置を設定する関数
+    cameraRef.current.position.set(0, 400, 800);
+    cameraRef.current.lookAt(0, 150, 0);
+    controlsRef.current.update();
+
+    // オブジェクトを再描画
+    redrawObjects();
   };
 
   const moveSpace = (direction) => {
@@ -131,21 +154,18 @@ const ThreeDApp = () => {
           newPosition = prevPosition;
       }
 
-      return newPosition; // 新しい位置だけを返す
+      // すべてのオブジェクトの位置を新しい位置に移動
+      objectsRef.current.forEach((obj) => {
+        obj.object.position.x += newPosition.x - prevPosition.x;
+        obj.object.position.y += newPosition.y - prevPosition.y;
+        obj.object.position.z += newPosition.z - prevPosition.z;
+      });
+
+      // 再レンダリングを実行
+      rendererRef.current.render(sceneRef.current, cameraRef.current);
+
+      return newPosition; // 新しい位置を返す
     });
-
-    // 再レンダリングを実行
-    rendererRef.current.render(sceneRef.current, cameraRef.current);
-  };
-
-  const resetCameraPosition = () => {
-    // 空間を初期位置に戻す
-    setSpacePosition({ x: 0, y: 0, z: 0 });
-
-    // カメラの初期位置を設定
-    cameraRef.current.position.set(0, 400, 800);
-    cameraRef.current.lookAt(0, 150, 0);
-    controlsRef.current.update();
   };
 
   useEffect(() => {
@@ -174,7 +194,6 @@ const ThreeDApp = () => {
     controlsRef.current.enabled = true; // 初期状態では有効
 
     const createRoom = (width, height, depth) => {
-      // 床
       const floorGeometry = new THREE.PlaneGeometry(width, depth);
       const floorMaterial = new THREE.MeshBasicMaterial({ color: floorColor });
       const floor = new THREE.Mesh(floorGeometry, floorMaterial);
@@ -186,7 +205,6 @@ const ThreeDApp = () => {
       );
       scene.add(floor);
 
-      // 背面
       const backWallGeometry = new THREE.PlaneGeometry(width, height);
       const backWallMaterial = new THREE.MeshBasicMaterial({
         color: backColor,
@@ -200,7 +218,6 @@ const ThreeDApp = () => {
       );
       scene.add(backWall);
 
-      // 側面
       const leftWallGeometry = new THREE.PlaneGeometry(depth, height);
       const leftWallMaterial = new THREE.MeshBasicMaterial({
         color: leftSideColor,
@@ -243,6 +260,8 @@ const ThreeDApp = () => {
       const leftEdges = new THREE.EdgesGeometry(leftWallGeometry);
       const leftLine = new THREE.LineSegments(leftEdges, edgesMaterial);
       leftWall.add(leftLine);
+
+      renderer.render(scene, camera);
     };
 
     createRoom(dimensions.width, dimensions.height, dimensions.depth);
@@ -286,11 +305,16 @@ const ThreeDApp = () => {
     }
 
     return () => {
+      // イベントリスナーのクリーンアップ
       window.removeEventListener("mousedown", handleMouseDown);
       window.removeEventListener("mousemove", handleMouseMove);
       window.removeEventListener("mouseup", handleMouseUp);
     };
   }, [isSpaceLocked, isDragging]);
+
+  const toggleSpaceLock = () => {
+    setIsSpaceLocked((prev) => !prev); // 空間のロック状態を切り替え
+  };
 
   const addObjectToScene = () => {
     const scene = sceneRef.current;
@@ -299,7 +323,6 @@ const ThreeDApp = () => {
     let geometry;
     let material;
 
-    // ワイヤーフレームと通常のメッシュを分岐
     if (isWireframe) {
       geometry = new THREE.BoxGeometry(
         objectSize.width,
@@ -345,7 +368,13 @@ const ThreeDApp = () => {
       },
     ]);
 
-    // 追加時に再レンダリング
+    rendererRef.current.render(sceneRef.current, cameraRef.current);
+  };
+
+  const redrawObjects = () => {
+    objectsRef.current.forEach((obj) => {
+      sceneRef.current.add(obj.object);
+    });
     rendererRef.current.render(sceneRef.current, cameraRef.current);
   };
 
@@ -360,6 +389,8 @@ const ThreeDApp = () => {
     objectsRef.current.splice(index, 1);
     setObjectLogs((prevLogs) => prevLogs.filter((_, i) => i !== index));
     setSelectedObjectIndex(0);
+
+    rendererRef.current.render(scene, cameraRef.current);
   };
 
   const handleInputChange = (e) => {
@@ -368,6 +399,7 @@ const ThreeDApp = () => {
       ...prev,
       [name]: parseFloat(value) * 100,
     }));
+    rendererRef.current.render(sceneRef.current, cameraRef.current);
   };
 
   const handleObjectSizeChange = (e) => {
@@ -376,6 +408,7 @@ const ThreeDApp = () => {
       ...prev,
       [name]: parseFloat(value),
     }));
+    rendererRef.current.render(sceneRef.current, cameraRef.current);
   };
 
   const handleColorChange = (e, index) => {
@@ -449,7 +482,6 @@ const ThreeDApp = () => {
     rendererRef.current.render(sceneRef.current, sceneRef.current.children[0]);
   };
 
-  // 新しいリサイズバーの制御
   const startResizing = (e) => {
     setIsResizing(true);
   };
@@ -463,6 +495,7 @@ const ThreeDApp = () => {
       const newHeight = window.innerHeight - e.clientY;
       setPanelHeight(newHeight);
     }
+    rendererRef.current.render(sceneRef.current, cameraRef.current);
   };
 
   useEffect(() => {
@@ -484,6 +517,31 @@ const ThreeDApp = () => {
     };
   }, []);
 
+  const resetAll = () => {
+    // カメラを初期位置に戻す
+    cameraRef.current.position.set(0, 400, 800);
+    cameraRef.current.lookAt(0, 150, 0);
+    controlsRef.current.update();
+
+    // 空間の位置を初期位置にリセット
+    setSpacePosition({ x: 0, y: 0, z: 0 });
+
+    // 片面側面モードを両面に戻す
+    setIsSingleSided(false);
+
+    // オブジェクトを全て削除
+    objectsRef.current.forEach((obj) => {
+      sceneRef.current.remove(obj.object);
+    });
+    objectsRef.current = [];
+
+    // オブジェクトログもリセット
+    setObjectLogs([]);
+
+    // 再レンダリング
+    rendererRef.current.render(sceneRef.current, cameraRef.current);
+  };
+
   return (
     <div
       className={`container`}
@@ -495,7 +553,15 @@ const ThreeDApp = () => {
       </button>
 
       <div className={`sidebar ${isSidebarOpen ? "" : "sidebar-closed"}`}>
-        <Sidebar openPopup={showPanel} />
+        <Sidebar
+          openPopup={showPanel}
+          resetAll={resetAll}
+          resetCameraPosition={resetCameraPosition}
+          toggleSpaceLock={toggleSpaceLock}
+          isSpaceLocked={isSpaceLocked}
+          isSingleSided={isSingleSided}
+          setIsSingleSided={setIsSingleSided}
+        />
       </div>
 
       <div className="webgl-container">
@@ -628,14 +694,11 @@ const ThreeDApp = () => {
               <button onClick={() => moveSpace("down")}>下</button>
               <button onClick={() => moveSpace("forward")}>手前</button>
               <button onClick={() => moveSpace("backward")}>後ろ</button>
-              <button onClick={toggleSpaceLock}>
-                {isSpaceLocked ? "固定解除" : "空間を固定"}
-              </button>
               <button onClick={() => setIsSingleSided((prev) => !prev)}>
                 {isSingleSided ? "両面側面" : "片面側面"}
               </button>
               <button onClick={resetCameraPosition}>
-                カメラ初期位置に戻す
+                オブジェクトを再描画
               </button>
             </div>
           </div>
@@ -673,7 +736,7 @@ const ThreeDApp = () => {
                 />
               </label>
             </div>
-            <label>代表色:</label>
+
             <ul className="color-list">
               {colorOptions.map((option) => (
                 <li
@@ -768,8 +831,7 @@ const ThreeDApp = () => {
               <button onClick={() => moveObject("backward")}>後ろ</button>
               <button onClick={() => moveObject("up")}>上</button>
               <button onClick={() => moveObject("down")}>下</button>
-            </div>
-            <div>
+
               <button onClick={() => rotateObject("horizontal")}>
                 横回転 45°
               </button>
@@ -777,7 +839,7 @@ const ThreeDApp = () => {
                 縦回転 45°
               </button>
             </div>
-            <button onClick={resetCameraPosition}>カメラ初期位置に戻す</button>
+            <button onClick={resetCameraPosition}>オブジェクトを再描画</button>
           </div>
         )}
 
