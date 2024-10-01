@@ -1,26 +1,34 @@
 import React, { useState } from "react";
-import ImageUploader from "./components/Uploader/ImageUploader";
-import Instructions from "./components/Instructions/Instructions";
 import Title from "./components/Common/Title";
 import SizeMeasurement from "./components/ThreeD/SizeMeasurement";
-import "./App.css";
 import ThreeDMeasurement from "./components/NewThreeD/ThreeDMeasurement";
-import CylinderMeasurement from "./components/CylinderMeasurement/CylinderMeasurement"; // 新しく追加する円柱用コンポーネント
+import CylinderMeasurement from "./components/CylinderMeasurement/CylinderMeasurement";
+import Instructions from "./components/Instructions/Instructions";
+import "./App.css";
+import ThreeDApp from "./components/ThreeDApp/ThreeDapp";
 
 function App() {
-  const [mode, setMode] = useState(null); // 初期状態ではモード未選択
+  const [mode, setMode] = useState(null); // メインモード選択用
+  const [subMode, setSubMode] = useState(null); // サブモード選択用
+
+  const handleBackToTop = () => {
+    setMode(null); // メインモード選択画面に戻る
+    setSubMode(null); // サブモード選択をリセット
+  };
 
   const handleModeSelection = (selectedMode) => {
     setMode(selectedMode);
+    setSubMode(null); // 新しいモードを選択したときにサブモードをリセット
   };
 
-  const handleBackToTop = () => {
-    setMode(null); // トップ画面に戻る
+  const handleSubModeSelection = (selectedSubMode) => {
+    setSubMode(selectedSubMode);
   };
 
   return (
     <div className="App">
-      <Title />
+      {/* modeが "3dapp" ではない場合に Title を表示 */}
+      {mode !== "3dapp" && <Title />}
 
       {/* トップ画面に戻るボタン */}
       {mode && (
@@ -28,43 +36,46 @@ function App() {
           <button onClick={handleBackToTop} className="top-button">
             トップ画面に戻る
           </button>
-
-          {/* モード切り替えボタン */}
-          <div className="mode-switch-container">
-            {mode !== "flat" && (
-              <button
-                onClick={() => handleModeSelection("flat")}
-                className="mode-switch-button"
-              >
-                平面長さ測定モード
-              </button>
-            )}
-            {mode !== "3D" && (
-              <button
-                onClick={() => handleModeSelection("3D")}
-                className="mode-switch-button"
-              >
-                立体長さ測定モード（キューブ）
-              </button>
-            )}
-            {mode !== "cylinder" && (
-              <button
-                onClick={() => handleModeSelection("cylinder")}
-                className="mode-switch-button"
-              >
-                円柱サイズ測定モード
-              </button>
-            )}
-          </div>
         </div>
       )}
 
-      {/* 最初の画面で3つのモード選択ボタンを表示 */}
+      {/* メインモード選択画面（セクション形式） */}
       {!mode && (
         <div className="mode-selection-container">
           <div
             className="mode-selection-section"
-            onClick={() => handleModeSelection("flat")}
+            onClick={() => handleModeSelection("measurement")}
+          >
+            <img
+              src="/img/size.jpg"
+              alt="サイズ測定アプリ"
+              className="mode-image"
+            />
+            <h2>サイズ測定</h2>
+          </div>
+          <div
+            className="mode-selection-section"
+            onClick={() => handleModeSelection("3dapp")}
+          >
+            <img
+              src="/img/room.jpg"
+              alt="引っ越し・模様替えモード"
+              className="mode-image"
+            />
+            <h2>引っ越し・模様替えモード</h2>
+          </div>
+        </div>
+      )}
+
+      {/* 新しい3Dアプリを表示 */}
+      {mode === "3dapp" && <ThreeDApp />}
+
+      {/* サイズ測定アプリのモード選択 */}
+      {mode === "measurement" && !subMode && (
+        <div className="mode-selection-container">
+          <div
+            className="mode-selection-section"
+            onClick={() => handleSubModeSelection("flat")}
           >
             <img
               src="/img/senen.jpg"
@@ -75,7 +86,7 @@ function App() {
           </div>
           <div
             className="mode-selection-section"
-            onClick={() => handleModeSelection("3D")}
+            onClick={() => handleSubModeSelection("3D")}
           >
             <img
               src="/img/rittai.jpg"
@@ -86,7 +97,7 @@ function App() {
           </div>
           <div
             className="mode-selection-section"
-            onClick={() => handleModeSelection("cylinder")}
+            onClick={() => handleSubModeSelection("cylinder")}
           >
             <img
               src="/img/tire.jpg"
@@ -98,8 +109,38 @@ function App() {
         </div>
       )}
 
+      {/* モード切り替えボタン */}
+      {subMode && (
+        <div className="mode-switch-container">
+          {subMode !== "flat" && (
+            <button
+              onClick={() => handleSubModeSelection("flat")}
+              className="mode-switch-button"
+            >
+              平面長さ測定モード
+            </button>
+          )}
+          {subMode !== "3D" && (
+            <button
+              onClick={() => handleSubModeSelection("3D")}
+              className="mode-switch-button"
+            >
+              立体長さ測定モード（キューブ）
+            </button>
+          )}
+          {subMode !== "cylinder" && (
+            <button
+              onClick={() => handleSubModeSelection("cylinder")}
+              className="mode-switch-button"
+            >
+              円柱サイズ測定モード
+            </button>
+          )}
+        </div>
+      )}
+
       {/* 平面モード */}
-      {mode === "flat" && (
+      {subMode === "flat" && (
         <div>
           <h2>平面サイズ測定モード</h2>
           <Instructions mode="flat" />
@@ -108,7 +149,7 @@ function App() {
       )}
 
       {/* 3Dモード（キューブ） */}
-      {mode === "3D" && (
+      {subMode === "3D" && (
         <div>
           <h2>3Dサイズ測定モード（キューブ）</h2>
           <Instructions mode="3D" />
@@ -117,7 +158,7 @@ function App() {
       )}
 
       {/* 円柱モード */}
-      {mode === "cylinder" && (
+      {subMode === "cylinder" && (
         <div>
           <h2>円柱サイズ測定モード</h2>
           <Instructions mode="cylinder" />

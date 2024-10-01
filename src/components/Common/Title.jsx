@@ -3,7 +3,7 @@ import React from "react";
 const Title = () => {
   return (
     <div style={styles.container}>
-      <h1 style={styles.title}>SizeSnap</h1> {/* タイトルをここで設定 */}
+      <h1 style={styles.title}>SizeSnap</h1>
       <p style={styles.subtitle}>千円札で簡単サイズ測定</p>
     </div>
   );
@@ -12,7 +12,7 @@ const Title = () => {
 const styles = {
   container: {
     textAlign: "center",
-    marginBottom: "20px",
+    marginBottom: "10px",
     color: "#333",
   },
   title: {
