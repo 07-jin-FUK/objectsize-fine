@@ -5,7 +5,7 @@ import ThreeDMeasurement from "./components/NewThreeD/ThreeDMeasurement";
 import CylinderMeasurement from "./components/CylinderMeasurement/CylinderMeasurement";
 import Instructions from "./components/Instructions/Instructions";
 import "./App.css";
-import ThreeDApp from "./components/ThreeDApp/ThreeDapp";
+import ThreeDApp from "./components/ThreeDApp/ThreeDApp";
 
 function App() {
   const [mode, setMode] = useState(null); // メインモード選択用
