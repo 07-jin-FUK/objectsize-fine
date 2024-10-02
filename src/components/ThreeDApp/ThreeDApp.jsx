@@ -44,6 +44,37 @@ const ThreeDApp = () => {
   const [scrollTop, setScrollTop] = useState(0); // スクロール位置
   const [isResizing, setIsResizing] = useState(false); // リサイズ中の状態
   const operationPanelRef = useRef(null);
+  const [initialSpacePosition, setInitialSpacePosition] = useState({
+    x: 0,
+    y: 0,
+    z: 0,
+  }); // 初期の空間位置を保存
+  const [currentSpaceOffset, setCurrentSpaceOffset] = useState({
+    x: 0,
+    y: 0,
+    z: 0,
+  }); // 空間の移動量を保存
+
+  const resetToInitialPositions = () => {
+    // 空間の位置を初期位置に戻す
+    setSpacePosition(initialSpacePosition);
+
+    // オブジェクトの位置も初期位置に戻す
+    objectsRef.current.forEach((obj) => {
+      obj.object.position.x -= currentSpaceOffset.x;
+      obj.object.position.y -= currentSpaceOffset.y;
+      obj.object.position.z -= currentSpaceOffset.z;
+    });
+
+    // 現在の空間の移動量もリセット
+    setCurrentSpaceOffset({ x: 0, y: 0, z: 0 });
+
+    // カメラをリセットして再レンダリング
+    cameraRef.current.position.set(0, 400, 800);
+    cameraRef.current.lookAt(0, 150, 0);
+    controlsRef.current.update();
+    rendererRef.current.render(sceneRef.current, cameraRef.current);
+  };
 
   const colorOptions = [
     { name: "赤", color: "#ff0000" },
@@ -153,6 +184,13 @@ const ThreeDApp = () => {
         default:
           newPosition = prevPosition;
       }
+
+      // 空間の移動量を更新
+      setCurrentSpaceOffset({
+        x: newPosition.x - initialSpacePosition.x,
+        y: newPosition.y - initialSpacePosition.y,
+        z: newPosition.z - initialSpacePosition.z,
+      });
 
       // すべてのオブジェクトの位置を新しい位置に移動
       objectsRef.current.forEach((obj) => {
@@ -561,6 +599,7 @@ const ThreeDApp = () => {
           isSpaceLocked={isSpaceLocked}
           isSingleSided={isSingleSided}
           setIsSingleSided={setIsSingleSided}
+          resetToInitialPositions={resetToInitialPositions}
         />
       </div>
 
@@ -697,6 +736,7 @@ const ThreeDApp = () => {
               <button onClick={() => setIsSingleSided((prev) => !prev)}>
                 {isSingleSided ? "両面側面" : "片面側面"}
               </button>
+              <button onClick={resetToInitialPositions}>元の位置に戻す</button>
               <button onClick={resetCameraPosition}>
                 オブジェクトを再描画
               </button>
