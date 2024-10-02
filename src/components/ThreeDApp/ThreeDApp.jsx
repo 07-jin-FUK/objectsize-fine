@@ -94,10 +94,6 @@ const ThreeDApp = () => {
     setActivePanel(panelType);
   };
 
-  const closePanel = () => {
-    setActivePanel(null);
-  };
-
   const toggleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen);
     rendererRef.current.render(sceneRef.current, cameraRef.current);
@@ -580,6 +576,378 @@ const ThreeDApp = () => {
     rendererRef.current.render(sceneRef.current, cameraRef.current);
   };
 
+  const setTopViewCamera = () => {
+    const scene = sceneRef.current;
+    const camera = cameraRef.current;
+    const controls = controlsRef.current;
+
+    // シーンの中心を計算
+    const bbox = new THREE.Box3().setFromObject(scene);
+    const center = bbox.getCenter(new THREE.Vector3());
+
+    // カメラをシーンの上空に配置
+    camera.position.set(center.x, center.y + 1000, center.z);
+    camera.lookAt(center);
+
+    // コントロールを更新
+    controls.target.set(center.x, center.y, center.z);
+    controls.update();
+  };
+
+  const saveTopViewAsImage = () => {
+    // 元のウィンドウサイズとアスペクト比を取得
+    const originalSize = rendererRef.current.getSize(new THREE.Vector2());
+    const aspectRatio = originalSize.x / originalSize.y; // 元のアスペクト比
+
+    // 保存用に正方形のサイズを計算
+    const saveWidth = 1080 * aspectRatio;
+    const saveHeight = 1080; // 正方形にするための高さ
+
+    // レンダラーのサイズを変更してからレンダリング
+    rendererRef.current.setSize(saveWidth, saveHeight);
+    rendererRef.current.render(sceneRef.current, cameraRef.current);
+
+    // PNG形式で画像を保存
+    const dataURL = rendererRef.current.domElement.toDataURL("image/png");
+    const link = document.createElement("a");
+    link.href = dataURL;
+    link.download = "top_view.png";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    // 元のサイズに戻す
+    rendererRef.current.setSize(originalSize.x, originalSize.y);
+  };
+
+  const addMeasurementsToImage = (imageDataURL, measurements) => {
+    const img = new Image();
+    img.src = imageDataURL;
+
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      canvas.width = img.width;
+      canvas.height = img.height;
+      const ctx = canvas.getContext("2d");
+
+      // まず、3Dシーンの画像をキャンバスに描画
+      ctx.drawImage(img, 0, 0);
+
+      // テキスト描画の設定
+      ctx.fillStyle = "red";
+      ctx.font = "24px Arial";
+      ctx.textAlign = "left"; // 左寄せ
+
+      // 採寸値を描画（幅と奥行を表示）
+      ctx.fillText(`幅: ${measurements.width} cm`, 50, 50);
+      ctx.fillText(`奥行: ${measurements.depth} cm`, 50, 80);
+      ctx.fillText(`高さ: ${measurements.height} cm`, 50, 110); // 高さも追加する場合
+
+      // 新しい画像データを作成して保存
+      const newDataURL = canvas.toDataURL("image/png");
+      const link = document.createElement("a");
+      link.href = newDataURL;
+      link.download = "top_view_with_measurements.png";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    };
+  };
+
+  const handleSaveWithMeasurements = () => {
+    const measurements = {
+      width: (dimensions.width / 100).toFixed(2), // メートルで表示
+      depth: (dimensions.depth / 100).toFixed(2), // メートルで表示
+      height: (dimensions.height / 100).toFixed(2), // メートルで表示
+    };
+
+    const dataURL = rendererRef.current.domElement.toDataURL("image/png");
+    addMeasurementsToImage(dataURL, measurements);
+  };
+
+  const saveCurrentViewAsImage = () => {
+    // 現在のウィンドウサイズを取得
+    const originalSize = rendererRef.current.getSize(new THREE.Vector2());
+
+    // アスペクト比を計算（幅 / 高さ）
+    const aspectRatio = originalSize.x / originalSize.y;
+
+    // 保存時の解像度を設定（幅1920pxを基準に高さを計算）
+    const newWidth = 1920;
+    const newHeight = newWidth / aspectRatio;
+
+    // 新しい解像度にリサイズ
+    rendererRef.current.setSize(newWidth, newHeight);
+
+    // カメラのアスペクト比を更新
+    cameraRef.current.aspect = newWidth / newHeight;
+    cameraRef.current.updateProjectionMatrix(); // カメラのプロジェクション行列を更新
+
+    // 現在のカメラの角度でシーンをレンダリング
+    rendererRef.current.render(sceneRef.current, cameraRef.current);
+
+    // 画像を保存する処理
+    const dataURL = rendererRef.current.domElement.toDataURL("image/png");
+
+    const link = document.createElement("a");
+    link.href = dataURL;
+    link.download = "current_view.png"; // ファイル名を設定
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    // 元のサイズとカメラのアスペクト比に戻す
+    rendererRef.current.setSize(originalSize.width, originalSize.height);
+    cameraRef.current.aspect = originalSize.x / originalSize.y;
+    cameraRef.current.updateProjectionMatrix();
+  };
+
+  const drawTopViewCanvasBW = () => {
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
+
+    // キャンバスサイズ設定（正方形）
+    const roomWidth = dimensions.width;
+    const roomDepth = dimensions.depth;
+    canvas.width = roomWidth + 150; // マージン分追加
+    canvas.height = roomDepth + 100; // マージン分追加
+
+    // キャンバスの背景色を白に設定
+    ctx.fillStyle = "#FFFFFF";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    const margin = 50; // マージンのサイズ
+    const scale = Math.min(
+      (canvas.width - margin * 2) / roomWidth,
+      (canvas.height - margin * 2) / roomDepth
+    );
+
+    const scaledRoomWidth = roomWidth * scale;
+    const scaledRoomDepth = roomDepth * scale;
+
+    // 黒線で部屋の外枠を描画
+    ctx.strokeStyle = "#000000";
+    ctx.lineWidth = 2;
+    ctx.strokeRect(margin, margin, scaledRoomWidth, scaledRoomDepth);
+
+    // 部屋の寸法を表示（横幅と奥行き）
+    ctx.fillStyle = "#000000";
+    ctx.font = "16px Arial";
+    ctx.fillText(
+      `W=${roomWidth} cm`,
+      margin + scaledRoomWidth / 2 - 40,
+      margin - 15
+    ); // 横幅
+    ctx.fillText(
+      `D=${roomDepth} cm`,
+      margin + scaledRoomWidth + 15,
+      margin + scaledRoomDepth / 2
+    ); // 奥行き
+
+    // オブジェクトを描画（すべてのオブジェクトのサイズや位置を反映）
+    objectsRef.current.forEach((obj, index) => {
+      const { width, depth } = obj.object.geometry.parameters;
+      const objWidth = width * scale;
+      const objDepth = depth * scale;
+
+      // オブジェクトをグレーで描画（白黒バージョン）
+      ctx.fillStyle = "#888888";
+      ctx.fillRect(
+        margin + (roomWidth / 2 + obj.object.position.x) * scale - objWidth / 2,
+        margin + (roomDepth / 2 + obj.object.position.z) * scale - objDepth / 2,
+        objWidth,
+        objDepth
+      );
+
+      // オブジェクトの横幅（上辺に平行）
+      ctx.beginPath();
+      ctx.moveTo(
+        margin + (roomWidth / 2 + obj.object.position.x) * scale - objWidth / 2,
+        margin +
+          (roomDepth / 2 + obj.object.position.z) * scale -
+          objDepth / 2 -
+          10
+      );
+      ctx.lineTo(
+        margin + (roomWidth / 2 + obj.object.position.x) * scale + objWidth / 2,
+        margin +
+          (roomDepth / 2 + obj.object.position.z) * scale -
+          objDepth / 2 -
+          10
+      );
+      ctx.stroke();
+      ctx.fillText(
+        `Obj ${index + 1} W=${width} cm`,
+        margin + (roomWidth / 2 + obj.object.position.x) * scale - objWidth / 4,
+        margin +
+          (roomDepth / 2 + obj.object.position.z) * scale -
+          objDepth / 2 -
+          15
+      );
+
+      // オブジェクトの奥行き（右辺に平行）
+      ctx.beginPath();
+      ctx.moveTo(
+        margin +
+          (roomWidth / 2 + obj.object.position.x) * scale +
+          objWidth / 2 +
+          10,
+        margin + (roomDepth / 2 + obj.object.position.z) * scale - objDepth / 2
+      );
+      ctx.lineTo(
+        margin +
+          (roomWidth / 2 + obj.object.position.x) * scale +
+          objWidth / 2 +
+          10,
+        margin + (roomDepth / 2 + obj.object.position.z) * scale + objDepth / 2
+      );
+      ctx.stroke();
+      ctx.fillText(
+        `D=${depth} cm`,
+        margin +
+          (roomWidth / 2 + obj.object.position.x) * scale +
+          objWidth / 2 +
+          15,
+        margin + (roomDepth / 2 + obj.object.position.z) * scale + objDepth / 4
+      );
+    });
+
+    // キャンバスの描画結果を表示するために、DOMに追加
+    // document.body.appendChild(canvas);
+
+    // 必要なら、ダウンロードリンクとして保存できるようにする
+    // const link = document.createElement("a");
+    // link.href = canvas.toDataURL("image/png");
+    // link.download = "top_view_bw.png";
+    // link.click();
+
+    // キャンバスを返す
+    return canvas;
+  };
+
+  const drawTopViewCanvasColor = () => {
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
+
+    // キャンバスサイズ設定（正方形）
+    const roomWidth = dimensions.width;
+    const roomDepth = dimensions.depth;
+    canvas.width = roomWidth + 150; // マージン分追加
+    canvas.height = roomDepth + 100; // マージン分追加
+
+    // キャンバスの背景色を床の色に設定
+    ctx.fillStyle = floorColor;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    const margin = 50; // マージンのサイズ
+    const scale = Math.min(
+      (canvas.width - margin * 2) / roomWidth,
+      (canvas.height - margin * 2) / roomDepth
+    );
+
+    const scaledRoomWidth = roomWidth * scale;
+    const scaledRoomDepth = roomDepth * scale;
+
+    // 黒線で部屋の外枠を描画
+    ctx.strokeStyle = "#000000";
+    ctx.lineWidth = 2;
+    ctx.strokeRect(margin, margin, scaledRoomWidth, scaledRoomDepth);
+
+    // 部屋の寸法を表示（横幅と奥行き）
+    ctx.fillStyle = "#000000";
+    ctx.font = "16px Arial";
+    ctx.fillText(
+      `W=${roomWidth} cm`,
+      margin + scaledRoomWidth / 2 - 40,
+      margin - 15
+    ); // 横幅
+    ctx.fillText(
+      `D=${roomDepth} cm`,
+      margin + scaledRoomWidth + 15,
+      margin + scaledRoomDepth / 2
+    ); // 奥行き
+
+    // オブジェクトを描画（すべてのオブジェクトのサイズや位置を反映）
+    objectsRef.current.forEach((obj, index) => {
+      const { width, depth } = obj.object.geometry.parameters;
+      const objWidth = width * scale;
+      const objDepth = depth * scale;
+
+      // オブジェクトの色を設定（カラー版）
+      ctx.fillStyle = obj.object.material.color.getStyle();
+      ctx.fillRect(
+        margin + (roomWidth / 2 + obj.object.position.x) * scale - objWidth / 2,
+        margin + (roomDepth / 2 + obj.object.position.z) * scale - objDepth / 2,
+        objWidth,
+        objDepth
+      );
+
+      // オブジェクトの横幅（上辺に平行）
+      ctx.beginPath();
+      ctx.moveTo(
+        margin + (roomWidth / 2 + obj.object.position.x) * scale - objWidth / 2,
+        margin +
+          (roomDepth / 2 + obj.object.position.z) * scale -
+          objDepth / 2 -
+          10
+      );
+      ctx.lineTo(
+        margin + (roomWidth / 2 + obj.object.position.x) * scale + objWidth / 2,
+        margin +
+          (roomDepth / 2 + obj.object.position.z) * scale -
+          objDepth / 2 -
+          10
+      );
+      ctx.stroke();
+      ctx.fillStyle = "#000000";
+      ctx.fillText(
+        `Obj ${index + 1} W=${width} cm`,
+        margin + (roomWidth / 2 + obj.object.position.x) * scale - objWidth / 4,
+        margin +
+          (roomDepth / 2 + obj.object.position.z) * scale -
+          objDepth / 2 -
+          15
+      );
+
+      // オブジェクトの奥行き（右辺に平行）
+      ctx.beginPath();
+      ctx.moveTo(
+        margin +
+          (roomWidth / 2 + obj.object.position.x) * scale +
+          objWidth / 2 +
+          10,
+        margin + (roomDepth / 2 + obj.object.position.z) * scale - objDepth / 2
+      );
+      ctx.lineTo(
+        margin +
+          (roomWidth / 2 + obj.object.position.x) * scale +
+          objWidth / 2 +
+          10,
+        margin + (roomDepth / 2 + obj.object.position.z) * scale + objDepth / 2
+      );
+      ctx.stroke();
+      ctx.fillText(
+        `D=${depth} cm`,
+        margin +
+          (roomWidth / 2 + obj.object.position.x) * scale +
+          objWidth / 2 +
+          15,
+        margin + (roomDepth / 2 + obj.object.position.z) * scale + objDepth / 4
+      );
+    });
+
+    // // キャンバスの描画結果を表示するために、DOMに追加
+    // document.body.appendChild(canvas);
+
+    // // 必要なら、ダウンロードリンクとして保存できるようにする
+    // const link = document.createElement("a");
+    // link.href = canvas.toDataURL("image/png");
+    // link.download = "top_view_color.png";
+    // link.click();
+    // キャンバスを返す
+    return canvas;
+  };
+
   return (
     <div
       className={`container`}
@@ -600,6 +968,12 @@ const ThreeDApp = () => {
           isSingleSided={isSingleSided}
           setIsSingleSided={setIsSingleSided}
           resetToInitialPositions={resetToInitialPositions}
+          setTopViewCamera={setTopViewCamera}
+          saveTopViewAsImage={saveTopViewAsImage}
+          handleSaveWithMeasurements={handleSaveWithMeasurements}
+          saveCurrentViewAsImage={saveCurrentViewAsImage}
+          drawTopViewCanvasBW={drawTopViewCanvasBW}
+          drawTopViewCanvasColor={drawTopViewCanvasColor}
         />
       </div>
 
@@ -618,6 +992,9 @@ const ThreeDApp = () => {
             top: `calc(100vh - ${panelHeight - scrollTop}px)`,
           }}
         ></div>
+        {activePanel === "topView" && (
+          <button onClick={handleSaveTopView}>天面図を保存</button>
+        )}
         {activePanel === "size" && (
           <div className="section">
             <h3>空間のサイズ</h3>
@@ -740,6 +1117,11 @@ const ThreeDApp = () => {
               <button onClick={resetCameraPosition}>
                 オブジェクトを再描画
               </button>
+              <button onClick={setTopViewCamera}>天面図を表示</button>
+              <button onClick={saveTopViewAsImage}>天面図を保存</button>
+              <button onClick={handleSaveWithMeasurements}>
+                採寸値付きで保存
+              </button>
             </div>
           </div>
         )}
@@ -840,7 +1222,7 @@ const ThreeDApp = () => {
                   backgroundColor: objectColor,
                 }}
               >
-                <span class="button-text">オブジェクトを追加</span>
+                <span className="button-text">オブジェクトを追加</span>
               </button>
             </div>
           </div>

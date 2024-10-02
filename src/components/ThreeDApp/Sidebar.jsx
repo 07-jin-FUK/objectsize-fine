@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import ImagePopup from "./ImagePopup";
 
 const Sidebar = ({
   openPopup,
@@ -9,9 +10,52 @@ const Sidebar = ({
   isSingleSided,
   setIsSingleSided,
   resetToInitialPositions,
+  setTopViewCamera,
+  saveTopViewAsImage,
+  saveCurrentViewAsImage,
+  drawTopViewCanvasBW,
+  drawTopViewCanvasColor,
 }) => {
   const [showResetConfirmation, setShowResetConfirmation] = useState(false);
+  const [isPopupOpen, setIsPopupOpen] = useState(false); // ポップアップ表示状態を管理
+  const [imageDataURL, setImageDataURL] = useState(""); // 生成した画像のURLを保存
+  const [showSaveButton, setShowSaveButton] = useState(false); // 保存ボタン表示用の状態を定義
 
+  // 天面図を表示した時に保存ボタンを表示
+  const handleShowTopView = () => {
+    setTopViewCamera(); // 天面図を表示
+    setShowSaveButton(true); // 保存ボタンを表示
+  };
+
+  // 保存ボタンが押された時の処理
+  const handleSaveTopView = () => {
+    saveTopViewAsImage(); // 天面図を保存
+  };
+
+  const handleShowBWPopup = () => {
+    const canvas = drawTopViewCanvasBW(); // 白黒天面図を生成
+    const dataURL = canvas.toDataURL("image/png");
+    setImageDataURL(dataURL);
+    setIsPopupOpen(true); // ポップアップを表示
+  };
+
+  const handleShowColorPopup = () => {
+    const canvas = drawTopViewCanvasColor(); // カラー天面図を生成
+    const dataURL = canvas.toDataURL("image/png");
+    setImageDataURL(dataURL);
+    setIsPopupOpen(true); // ポップアップを表示
+  };
+
+  const handleSaveImage = () => {
+    const link = document.createElement("a");
+    link.href = imageDataURL;
+    link.download = "top_view.png";
+    link.click();
+  };
+
+  const handleClosePopup = () => {
+    setIsPopupOpen(false); // ポップアップを閉じる
+  };
   const handleResetClick = () => {
     setShowResetConfirmation(true); // ポップアップを表示
   };
@@ -37,6 +81,20 @@ const Sidebar = ({
       </button>
       <button onClick={() => openPopup("objectLog")}>オブジェクトログ</button>
       <button onClick={resetToInitialPositions}>空間を元の位置に戻す</button>
+      <button onClick={handleShowTopView}>天面図を確認</button>
+      {/* 天面図表示中に保存ボタンを表示 */}
+      {showSaveButton && (
+        <button onClick={handleSaveTopView}>天面図を保存</button>
+      )}
+      <button onClick={saveCurrentViewAsImage}>現在のビューを保存</button>{" "}
+      <button onClick={handleShowBWPopup}>白黒天面図(サイズ込)</button>
+      <button onClick={handleShowColorPopup}>カラー天面図(サイズ込)</button>
+      <ImagePopup
+        isOpen={isPopupOpen}
+        onClose={handleClosePopup}
+        imageDataURL={imageDataURL}
+        onSave={handleSaveImage}
+      />
       <button
         onClick={() => setIsSingleSided((prev) => !prev)}
         style={{
@@ -51,7 +109,6 @@ const Sidebar = ({
       <button onClick={resetCameraPosition} style={{ backgroundColor: "blue" }}>
         オブジェクトを再描画
       </button>
-
       {/* 空間を固定/回転モード */}
       <div>
         <button
@@ -96,7 +153,6 @@ const Sidebar = ({
       >
         オールリセット
       </button>
-
       {/* ポップアップ表示 */}
       {showResetConfirmation && (
         <div
@@ -126,7 +182,6 @@ const Sidebar = ({
           </div>
         </div>
       )}
-
       {/* 背景のオーバーレイ */}
       {showResetConfirmation && (
         <div

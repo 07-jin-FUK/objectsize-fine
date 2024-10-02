@@ -39,6 +39,7 @@ html {
     display: flex;
     flex-direction: column;
     justify-content: flex-start;
+    overflow-y: auto;
     z-index: 100;
 }
 
@@ -59,7 +60,8 @@ html {
 
 .sidebar button {
     width: 100%;
-    padding: 20px;
+    padding: 15px;
+  
     background-color: #444;
     color: white;
     border: none;
@@ -119,8 +121,7 @@ html {
     transform: translateY(-2px);
 }
 
-/* 共通フォームとラベルのスタイル */
-/* ラベルとインプットが横並びになるように設定 */
+
 label {
     margin-bottom: 10px;
     display: flex;
@@ -139,7 +140,7 @@ select {
     margin-left: 10px;
 }
 
-/* ボタンの共通スタイル */
+
 button {
     padding: 10px 15px;
     background-color: #3498db;
@@ -156,7 +157,7 @@ button:hover {
     transform: translateY(-2px);
 }
 
-/* セクションのタイトル */
+
 h3 {
     font-size: 18px;
     margin-bottom: 10px;
@@ -166,10 +167,10 @@ h3 {
 
 .section {
     display: flex;
-    flex-wrap: wrap; /* 折り返し */
-    flex-direction: column; /* 左詰めで垂直に積み上げる */
-    align-items: flex-start; /* 左揃えにする */
-    text-align: left; /* テキストも左揃え */
+    flex-wrap: wrap; 
+    flex-direction: column; 
+    align-items: flex-start; 
+    text-align: left; 
     padding: 10px;
     margin-bottom: 20px;
     width: 100%;
@@ -316,6 +317,8 @@ ul.color-list li {
     resize: vertical;
     /* パネル内のスクロールを有効にする */
     overflow-y: auto;
+    z-index: 50;
+        /* ポップアップより下に表示されるように低く設定 */
     
 }
 
@@ -331,7 +334,7 @@ ul.color-list li {
     height: 10px;
     background-color: #888585;
     cursor: ns-resize;
-    z-index: 101;
+    z-index: 51;
     /* パネルより前面に出す */
 }
 
@@ -469,3 +472,130 @@ button.yes-button:hover{
     transform: translateY(-2px);
 }
 
+
+.popup-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(0, 0, 0, 0.7);
+    /* 周りを暗くする */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1100;
+}
+
+    
+.popup {
+    position: fixed;
+    background-color: #fff;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
+    max-width: 90vw;
+        color:black;
+    max-height: 90vh;
+    /* 画面高さの90%まで */
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 1200;   
+}
+
+.popup img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+}
+
+.popup button {
+    margin-top: 20px;
+    padding: 10px 20px;
+    background-color: #3498db;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.popup button:hover {
+    background-color: #2980b9;
+}
+
+
+.popup-content {
+    max-width: 100%;
+    max-height: 100%;
+    overflow: auto;
+}
+
+/* オーバーレイ (背景の暗くなる部分) */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(0, 0, 0, 0.5);
+    /* 半透明の黒 */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    /* 他の要素の上に表示されるように */
+}
+
+/* モーダルウィンドウのコンテンツ */
+.modal-content {
+    background-color: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0px 4px 15px rgba(0, 0, 0, 0.2);
+    position: relative;
+    z-index: 1001;
+    /* オーバーレイの上に表示 */
+    max-width: 90%;
+    max-height: 90%;
+    overflow: auto;
+    /* 画像やコンテンツが大きすぎる場合にスクロールを許可 */
+}
+
+/* モーダル内の画像 */
+.modal-content img {
+    max-width: 100%;
+    /* 画像の幅をモーダルに収まるようにする */
+    height: auto;
+    display: block;
+    margin-bottom: 20px;
+}
+
+/* ボタンのスタイル */
+.modal-content button {
+    display: inline-block;
+    padding: 10px 20px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    margin-right: 10px;
+}
+
+.modal-content button:hover {
+    background-color: #0056b3;
+}
+
+/* 閉じるボタンのスタイル */
+.modal-content button:last-child {
+    background-color: #dc3545;
+}
+
+.modal-content button:last-child:hover {
+    background-color: #c82333;
+}
