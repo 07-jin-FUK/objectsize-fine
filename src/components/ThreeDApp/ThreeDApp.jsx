@@ -1284,23 +1284,83 @@ const ThreeDApp = () => {
               {binedLogs.map((log, index) => (
                 <li key={index}>
                   {/* 各ログの内容がある場合のみ、それに応じて表示を切り替える */}
-                  {log.location && <p>名前: {log.location}</p>}
-                  {log.length && <p>長さ: {log.length}cm</p>}
-                  {log.width && <p>幅: {log.width}cm</p>}
-                  {log.height && <p>高さ: {log.height}cm</p>}
-                  {log.depth && <p>奥行き: {log.depth}cm</p>}
-                  {log.top_vertical && (
-                    <p>天面の縦サイズ: {log.top_vertical}cm</p>
-                  )}
-                  {log.top_horizontal && (
-                    <p>天面の横サイズ: {log.top_horizontal}cm</p>
-                  )}
-                  {log.side_height && <p>側面の高さ: {log.side_height}cm</p>}
+                  {Object.entries(log).map(([key, value]) => {
+                    if (value && key !== "id") {
+                      let label = "";
+                      let unit = ""; // 単位を初期化
+
+                      // キーに応じて表示ラベルと単位を設定
+                      switch (key) {
+                        case "location":
+                          label = "名前";
+                          break;
+                        case "length":
+                          label = "長さ";
+                          unit = "cm";
+                          break;
+                        case "width":
+                          label = "幅";
+                          unit = "cm";
+                          break;
+                        case "height":
+                          label = "高さ";
+                          unit = "cm";
+                          break;
+                        case "depth":
+                          label = "奥行き";
+                          unit = "cm";
+                          break;
+                        case "top_vertical":
+                          label = "天面の縦サイズ";
+                          unit = "cm";
+                          break;
+                        case "top_horizontal":
+                          label = "天面の横サイズ";
+                          unit = "cm";
+                          break;
+                        case "side_height":
+                          label = "側面の高さ";
+                          unit = "cm";
+                          break;
+                        case "diameter":
+                          label = "直径";
+                          unit = "cm";
+                          break;
+                        case "topArea":
+                        case "top_area":
+                          label = "天面積";
+                          unit = "cm²";
+                          break;
+                        case "sideArea":
+                        case "side_area":
+                          label = "側面積";
+                          unit = "cm²";
+                          break;
+                        case "volume":
+                          label = "体積";
+                          unit = "cm³";
+                          break;
+                        // 他の新しい項目をここに追加
+                        default:
+                          label = key;
+                          break;
+                      }
+
+                      return (
+                        <p key={key}>
+                          {label}: {value}
+                          {unit && ` ${unit}`}
+                        </p>
+                      );
+                    }
+                    return null;
+                  })}
                 </li>
               ))}
             </ul>
           </div>
         )}
+
         {activePanel === "objectLog" && (
           <div className="section">
             <h3>オブジェクトログ</h3>
