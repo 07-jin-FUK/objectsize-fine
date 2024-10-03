@@ -146,7 +146,7 @@ const CylinderMeasurement = () => {
         // レスポンスデータをメッセージとして更新
         updateMessage(
           <>
-            計測結果:
+            計測結果:（問題なければメモボタン推奨）
             <br />
             直径: {diameter}
             <br />
@@ -373,11 +373,20 @@ const CylinderMeasurement = () => {
         )}
         {result && (
           <div className="resultContainer">
+            <input
+              type="text"
+              placeholder="計測場所を入力"
+              value={currentLocation}
+              onChange={(e) => setCurrentLocation(e.target.value)}
+            />
+            <button className="memoButton" onClick={saveMeasurementLog}>
+              メモ
+            </button>
             <button className="allResetButton" onClick={resetEverything}>
-              違う写真でサイズを測る
+              写真を変更する
             </button>
             <button className="sameResetButton" onClick={resetBluePoints}>
-              同じ写真で別の部分を計測する
+              別の部分を計測する
             </button>
           </div>
         )}
@@ -524,27 +533,6 @@ const CylinderMeasurement = () => {
         </div>
       )}
       <div className="measurementLogs">
-        {result && (
-          <div className="measurementResult">
-            <p>計測結果:</p>
-            <ul>
-              <li>直径: {result.diameter} </li>
-              <li>高さ: {result.height} </li>
-              <li>天面積: {result.top_area} </li>
-              <li>側面積: {result.side_area} </li>
-              <li>体積: {result.volume} </li>
-            </ul>
-            <input
-              type="text"
-              placeholder="計測場所を入力"
-              value={currentLocation}
-              onChange={(e) => setCurrentLocation(e.target.value)}
-            />
-            <button onClick={saveMeasurementLog}>メモ</button>
-          </div>
-        )}
-
-        {/* 保存された計測結果を表示 */}
         <>
           <h3>計測履歴</h3>
           {measurementLogs.length > 0 ? (

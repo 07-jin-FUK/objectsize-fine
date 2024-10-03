@@ -82,9 +82,10 @@ const Sidebar = ({
       <button onClick={() => openPopup("objectLog")}>オブジェクトログ</button>
       <button onClick={resetToInitialPositions}>空間を元の位置に戻す</button>
       <button onClick={handleShowTopView}>天面図を確認</button>
-      {/* 天面図表示中に保存ボタンを表示 */}
       {showSaveButton && (
-        <button onClick={handleSaveTopView}>天面図を保存</button>
+        <button style={{ backgroundColor: "red" }} onClick={handleSaveTopView}>
+          天面図を保存
+        </button>
       )}
       <button onClick={saveCurrentViewAsImage}>現在のビューを保存</button>{" "}
       <button onClick={handleShowBWPopup}>白黒天面図(サイズ込)</button>
@@ -95,51 +96,67 @@ const Sidebar = ({
         imageDataURL={imageDataURL}
         onSave={handleSaveImage}
       />
-      <button
-        onClick={() => setIsSingleSided((prev) => !prev)}
-        style={{
-          background: isSingleSided
-            ? "#27ae60"
-            : "linear-gradient(to right, #27ae60 50%, #444 50%)",
-          color: "white",
-        }}
-      >
-        {isSingleSided ? "側面両面モードへ" : "側面片面モードへ"}
-      </button>
       <button onClick={resetCameraPosition} style={{ backgroundColor: "blue" }}>
         オブジェクトを再描画
       </button>
-      {/* 空間を固定/回転モード */}
-      <div>
+      <div className="fixbutton">
+        <div className="modechange">
+          <button
+            onClick={() => isSpaceLocked && toggleSpaceLock()}
+            style={{
+              backgroundColor: isSpaceLocked ? "gray" : "green",
+              color: "white",
+            }}
+          >
+            <span style={{ fontWeight: "bold" }}>ドラッグ空間回転モード</span>
+          </button>
+          <button
+            onClick={() => !isSpaceLocked && toggleSpaceLock()}
+            style={{
+              backgroundColor: !isSpaceLocked ? "gray" : "red",
+              color: "white",
+              marginRight: "5px",
+            }}
+          >
+            <span style={{ fontWeight: "bold" }}>ドラッグ位置変更モード</span>
+          </button>
+        </div>
         <button
-          onClick={() => isSpaceLocked && toggleSpaceLock()}
+          className="changeside"
+          onClick={() => setIsSingleSided((prev) => !prev)}
           style={{
-            backgroundColor: isSpaceLocked ? "gray" : "green",
+            background: isSingleSided
+              ? "#27ae60"
+              : "linear-gradient(to right, #27ae60 50%, #444 50%)",
             color: "white",
           }}
         >
-          <span style={{ fontWeight: "bold", fontSize: "18px" }}>
-            ドラッグ空間回転モード
-          </span>
-          <br />
-          ベースモード
+          {isSingleSided ? "側面を両面にする" : "側面を片面にする"}
         </button>
         <button
-          onClick={() => !isSpaceLocked && toggleSpaceLock()}
-          style={{
-            backgroundColor: !isSpaceLocked ? "gray" : "red",
-            color: "white",
-            marginRight: "5px",
-          }}
+          className="reartobject"
+          onClick={resetCameraPosition}
+          style={{ backgroundColor: "blue" }}
         >
-          <span style={{ fontWeight: "bold", fontSize: "18px" }}>
-            ドラッグ位置変更モード
-          </span>
-          <br />
-          使用後は空間回転モードに
-          <br />
-          戻してください
+          オブジェクトを再描画
         </button>
+        <p className="mode-description">
+          {isSpaceLocked ? (
+            <>
+              現在は空間位置変更モードです。画面ドラッグで空間が移動します。
+              <br />
+              空間の移動で処理の関係上オブジェクトが消失することがありますが、オブジェクトを再描画ボタンにより元に戻ります。
+              <br />
+              このモード中のオブジェクト配置は不安定のため、移動後はモードを空間回転に戻してください。
+            </>
+          ) : (
+            <>
+              現在は空間回転モードです。画面ドラッグで空間が回転します。（基本モード）
+              <br />
+              空間の移動で処理の関係上オブジェクトが消失することがありますが、オブジェクトを再描画ボタンにより元に戻ります。
+            </>
+          )}
+        </p>
       </div>
       {/* オールリセットボタン（強調したスタイル） */}
       <button

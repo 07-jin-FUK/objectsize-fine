@@ -17,7 +17,10 @@ const ThreeDApp = () => {
     width: 50,
     height: 50,
     depth: 50,
+    diameter: 50, // 円柱用の直径を追加
   });
+  const [objectType, setObjectType] = useState("cube"); // 新しくオブジェクトの種類を管理する状態
+
   const [floorColor, setFloorColor] = useState("#deb887");
   const [backColor, setBackColor] = useState("#f0f0f0");
   const [objectColor, setObjectColor] = useState("#ff0000");
@@ -92,11 +95,6 @@ const ThreeDApp = () => {
 
   const showPanel = (panelType) => {
     setActivePanel(panelType);
-  };
-
-  const toggleSidebar = () => {
-    setIsSidebarOpen(!isSidebarOpen);
-    rendererRef.current.render(sceneRef.current, cameraRef.current);
   };
 
   const handleMouseDown = (e) => {
@@ -357,12 +355,26 @@ const ThreeDApp = () => {
     let geometry;
     let material;
 
+    // ワイヤーフレームモードの処理
     if (isWireframe) {
-      geometry = new THREE.BoxGeometry(
-        objectSize.width,
-        objectSize.height,
-        objectSize.depth
-      );
+      if (objectType === "cube") {
+        // キューブ型オブジェクトのワイヤーフレームを生成
+        geometry = new THREE.BoxGeometry(
+          objectSize.width,
+          objectSize.height,
+          objectSize.depth
+        );
+      } else if (objectType === "cylinder") {
+        // 円柱型オブジェクトのワイヤーフレームを生成
+        const radius = objectSize.diameter / 2;
+        geometry = new THREE.CylinderGeometry(
+          radius,
+          radius,
+          objectSize.height,
+          32
+        );
+      }
+
       material = new THREE.LineBasicMaterial({ color: color });
       const edgesGeometry = new THREE.EdgesGeometry(geometry);
       const wireframe = new THREE.LineSegments(edgesGeometry, material);
@@ -374,34 +386,50 @@ const ThreeDApp = () => {
       scene.add(wireframe);
       objectsRef.current.push({ color: color, object: wireframe });
     } else {
-      geometry = new THREE.BoxGeometry(
-        objectSize.width,
-        objectSize.height,
-        objectSize.depth
-      );
+      // ワイヤーフレームでない場合
+      if (objectType === "cube") {
+        // キューブ型オブジェクトを生成
+        geometry = new THREE.BoxGeometry(
+          objectSize.width,
+          objectSize.height,
+          objectSize.depth
+        );
+      } else if (objectType === "cylinder") {
+        // 円柱型オブジェクトを生成
+        const radius = objectSize.diameter / 2;
+        geometry = new THREE.CylinderGeometry(
+          radius,
+          radius,
+          objectSize.height,
+          32
+        );
+      }
+
       material = new THREE.MeshBasicMaterial({ color });
-      const cube = new THREE.Mesh(geometry, material);
-      cube.position.set(
+      const mesh = new THREE.Mesh(geometry, material);
+      mesh.position.set(
         spacePosition.x,
         objectSize.height / 2 + 100 + spacePosition.y,
         spacePosition.z
       );
-      scene.add(cube);
-      objectsRef.current.push({ color: color, object: cube });
+      scene.add(mesh);
+      objectsRef.current.push({ color: color, object: mesh });
     }
 
+    // ログに新しいオブジェクトの情報を追加
     setObjectLogs((prevLogs) => [
       ...prevLogs,
       {
         color: color,
         colorName: selectedColorName,
-        width: objectSize.width,
+        width: objectSize.width, // キューブの場合は幅、円柱の場合は直径
         height: objectSize.height,
-        depth: objectSize.depth,
+        depth: objectType === "cube" ? objectSize.depth : objectSize.diameter, // キューブか円柱かで切り替え
         isWireframe: isWireframe,
       },
     ]);
 
+    // シーンを再レンダリング
     rendererRef.current.render(sceneRef.current, cameraRef.current);
   };
 
@@ -620,51 +648,6 @@ const ThreeDApp = () => {
     rendererRef.current.setSize(originalSize.x, originalSize.y);
   };
 
-  const addMeasurementsToImage = (imageDataURL, measurements) => {
-    const img = new Image();
-    img.src = imageDataURL;
-
-    img.onload = () => {
-      const canvas = document.createElement("canvas");
-      canvas.width = img.width;
-      canvas.height = img.height;
-      const ctx = canvas.getContext("2d");
-
-      // まず、3Dシーンの画像をキャンバスに描画
-      ctx.drawImage(img, 0, 0);
-
-      // テキスト描画の設定
-      ctx.fillStyle = "red";
-      ctx.font = "24px Arial";
-      ctx.textAlign = "left"; // 左寄せ
-
-      // 採寸値を描画（幅と奥行を表示）
-      ctx.fillText(`幅: ${measurements.width} cm`, 50, 50);
-      ctx.fillText(`奥行: ${measurements.depth} cm`, 50, 80);
-      ctx.fillText(`高さ: ${measurements.height} cm`, 50, 110); // 高さも追加する場合
-
-      // 新しい画像データを作成して保存
-      const newDataURL = canvas.toDataURL("image/png");
-      const link = document.createElement("a");
-      link.href = newDataURL;
-      link.download = "top_view_with_measurements.png";
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    };
-  };
-
-  const handleSaveWithMeasurements = () => {
-    const measurements = {
-      width: (dimensions.width / 100).toFixed(2), // メートルで表示
-      depth: (dimensions.depth / 100).toFixed(2), // メートルで表示
-      height: (dimensions.height / 100).toFixed(2), // メートルで表示
-    };
-
-    const dataURL = rendererRef.current.domElement.toDataURL("image/png");
-    addMeasurementsToImage(dataURL, measurements);
-  };
-
   const saveCurrentViewAsImage = () => {
     // 現在のウィンドウサイズを取得
     const originalSize = rendererRef.current.getSize(new THREE.Vector2());
@@ -811,17 +794,6 @@ const ThreeDApp = () => {
         margin + (roomDepth / 2 + obj.object.position.z) * scale + objDepth / 4
       );
     });
-
-    // キャンバスの描画結果を表示するために、DOMに追加
-    // document.body.appendChild(canvas);
-
-    // 必要なら、ダウンロードリンクとして保存できるようにする
-    // const link = document.createElement("a");
-    // link.href = canvas.toDataURL("image/png");
-    // link.download = "top_view_bw.png";
-    // link.click();
-
-    // キャンバスを返す
     return canvas;
   };
 
@@ -935,29 +907,15 @@ const ThreeDApp = () => {
         margin + (roomDepth / 2 + obj.object.position.z) * scale + objDepth / 4
       );
     });
-
-    // // キャンバスの描画結果を表示するために、DOMに追加
-    // document.body.appendChild(canvas);
-
-    // // 必要なら、ダウンロードリンクとして保存できるようにする
-    // const link = document.createElement("a");
-    // link.href = canvas.toDataURL("image/png");
-    // link.download = "top_view_color.png";
-    // link.click();
-    // キャンバスを返す
     return canvas;
   };
 
   return (
     <div
-      className={`container`}
+      className={`container1`}
       onMouseMove={resizePanel}
       onMouseUp={stopResizing}
     >
-      <button onClick={toggleSidebar} className="toggle-sidebar-btn">
-        {isSidebarOpen ? "←閉じる" : "menu→"}
-      </button>
-
       <div className={`sidebar ${isSidebarOpen ? "" : "sidebar-closed"}`}>
         <Sidebar
           openPopup={showPanel}
@@ -970,7 +928,6 @@ const ThreeDApp = () => {
           resetToInitialPositions={resetToInitialPositions}
           setTopViewCamera={setTopViewCamera}
           saveTopViewAsImage={saveTopViewAsImage}
-          handleSaveWithMeasurements={handleSaveWithMeasurements}
           saveCurrentViewAsImage={saveCurrentViewAsImage}
           drawTopViewCanvasBW={drawTopViewCanvasBW}
           drawTopViewCanvasColor={drawTopViewCanvasColor}
@@ -1119,9 +1076,6 @@ const ThreeDApp = () => {
               </button>
               <button onClick={setTopViewCamera}>天面図を表示</button>
               <button onClick={saveTopViewAsImage}>天面図を保存</button>
-              <button onClick={handleSaveWithMeasurements}>
-                採寸値付きで保存
-              </button>
             </div>
           </div>
         )}
@@ -1129,35 +1083,73 @@ const ThreeDApp = () => {
         {activePanel === "objectSize" && (
           <div className="section">
             <h3>オブジェクトのサイズと色</h3>
-            <div className="dimension-group">
+            <div>
+              {/* オブジェクトの種類を選択するドロップダウンメニュー */}
               <label>
-                横幅 (cm):
-                <input
-                  type="number"
-                  name="width"
-                  value={objectSize.width}
-                  onChange={handleObjectSizeChange}
-                />
-              </label>
-              <label>
-                高さ (cm):
-                <input
-                  type="number"
-                  name="height"
-                  value={objectSize.height}
-                  onChange={handleObjectSizeChange}
-                />
-              </label>
-              <label>
-                奥行 (cm):
-                <input
-                  type="number"
-                  name="depth"
-                  value={objectSize.depth}
-                  onChange={handleObjectSizeChange}
-                />
+                形状:
+                <select
+                  value={objectType}
+                  onChange={(e) => setObjectType(e.target.value)}
+                >
+                  <option value="cube">キューブ型</option>
+                  <option value="cylinder">円柱型</option>
+                </select>
               </label>
             </div>
+            {objectType === "cube" && (
+              <div className="dimension-group">
+                <label>
+                  横幅 (cm):
+                  <input
+                    type="number"
+                    name="width"
+                    value={objectSize.width}
+                    onChange={handleObjectSizeChange}
+                  />
+                </label>
+                <label>
+                  高さ (cm):
+                  <input
+                    type="number"
+                    name="height"
+                    value={objectSize.height}
+                    onChange={handleObjectSizeChange}
+                  />
+                </label>
+                <label>
+                  奥行 (cm):
+                  <input
+                    type="number"
+                    name="depth"
+                    value={objectSize.depth}
+                    onChange={handleObjectSizeChange}
+                  />
+                </label>
+              </div>
+            )}
+
+            {objectType === "cylinder" && (
+              <div className="dimension-group">
+                <label>
+                  直径 (cm):
+                  <input
+                    type="number"
+                    name="diameter"
+                    value={objectSize.diameter}
+                    onChange={handleObjectSizeChange}
+                  />
+                </label>
+                <label>
+                  高さ (cm):
+                  <input
+                    type="number"
+                    name="height"
+                    value={objectSize.height}
+                    onChange={handleObjectSizeChange}
+                  />
+                </label>
+              </div>
+            )}
 
             <ul className="color-list">
               {colorOptions.map((option) => (

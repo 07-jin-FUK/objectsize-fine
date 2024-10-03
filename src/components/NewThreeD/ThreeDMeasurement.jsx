@@ -156,7 +156,7 @@ const ThreeDMeasurement = () => {
         // レスポンスデータをメッセージとして更新
         updateMessage(
           <>
-            計測結果:
+            計測結果:（問題なければメモボタン推奨）
             <br />
             天面の縦サイズ: {top_vertical},<br />
             天面の横サイズ: {top_horizontal},<br />
@@ -235,11 +235,21 @@ const ThreeDMeasurement = () => {
         )}
         {result && (
           <div className="resultContainer">
+            <input
+              type="text"
+              placeholder="計測場所を入力"
+              value={currentLocation}
+              onChange={(e) => setCurrentLocation(e.target.value)}
+            />
+            <button className="memoButton" onClick={saveMeasurementLog}>
+              メモ
+            </button>
+
             <button className="allResetButton" onClick={resetEverything}>
-              違う写真でサイズを測る
+              写真を変更する
             </button>
             <button className="sameResetButton" onClick={resetBluePoints}>
-              同じ写真で別の部分を計測する
+              別の部分を計測する
             </button>
           </div>
         )}
@@ -455,28 +465,6 @@ const ThreeDMeasurement = () => {
         </div>
       )}
       <div className="measurementLogs">
-        {result && (
-          <div className="measurementResult">
-            <p>計測結果:</p>
-            <ul>
-              <li>天面の縦サイズ: {result.top_vertical} </li>
-              <li>天面の横サイズ: {result.top_horizontal} </li>
-              <li>側面の高さ: {result.side_height} </li>
-              <li>天面面積: {result.top_area} </li>
-              <li>側面面積: {result.side_area} </li>
-              <li>体積: {result.volume} </li>
-            </ul>
-            <input
-              type="text"
-              placeholder="計測場所を入力"
-              value={currentLocation}
-              onChange={(e) => setCurrentLocation(e.target.value)}
-            />
-            <button onClick={saveMeasurementLog}>メモ</button>
-          </div>
-        )}
-
-        {/* 保存された計測結果を表示 */}
         <>
           <h3>計測履歴</h3>
           {measurementLogs.length > 0 ? (

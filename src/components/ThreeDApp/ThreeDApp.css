@@ -13,7 +13,20 @@ html {
     transition: margin-left 0.3s ease, width 0.3s ease;
     width: 100%;
     min-height: 100vh;
-    background-color: #ecf0f1;
+    background-color:#f4f4f4;
+    box-sizing: border-box;
+    overflow-x: hidden;
+    padding-bottom: 20px;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+}
+
+.container1 {
+    transition: margin-left 0.3s ease, width 0.3s ease;
+    width: 100%;
+    min-height: 100vh;
+    background-color: #000;
     box-sizing: border-box;
     overflow-x: hidden;
     padding-bottom: 20px;
@@ -59,7 +72,7 @@ html {
 }
 
 .sidebar button {
-    width: 100%;
+    /* width: 100%; */
     padding: 15px;
   
     background-color: #444;
@@ -340,17 +353,14 @@ ul.color-list li {
 
 .operation-panel.open {
     display: block;
-    /* ボタンがクリックされたら表示 */
 }
 
-/* WebGL コンテナの高さを調整 (サイドバーを避ける) */
+
 .webgl-container {
     width: 100%;
-
-    /* サイドバーの幅を避ける */
+    margin-right: 500px;
     height: 80%;
-    /* 操作パネルが表示されるので、残り80%に調整 */
-
+    background-color: #000;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -598,4 +608,54 @@ button.yes-button:hover{
 
 .modal-content button:last-child:hover {
     background-color: #c82333;
+}
+
+.fixbutton {
+    max-width: 100%;
+    position: fixed;
+    width: 80%;
+    height: 5%;
+    top: 1%;
+    left: 300px;
+    z-index: 1000;
+    display: flex;
+    text-align: center;
+}
+
+.changeside{
+    width: 160px;
+    text-align: center;
+    top: 0%;
+    right: 20px;
+    z-index: 1000;
+   
+}   
+
+
+.reartobject{
+    width: 190px;
+    z-index: 1000;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.modechange{
+    display: flex;    
+    width: 450px;
+    top: 20%;
+    right: 20px;
+    z-index: 1000;
+    overflow: hidden;
+ text-overflow: ellipsis;
+  
+}
+
+.mode-description{
+    position: fixed;
+        width: 80%;
+        height: 8%;
+        top:5%;
+        text-align: left;
+        font-size: 14px;
+
 }
