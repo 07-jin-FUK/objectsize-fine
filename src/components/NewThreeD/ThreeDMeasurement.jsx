@@ -32,6 +32,7 @@ const ThreeDMeasurement = () => {
     }
 
     const newLog = {
+      id: Date.now(), // ユニークなIDを追加
       location: currentLocation,
       top_vertical: result?.top_vertical || "N/A",
       top_horizontal: result?.top_horizontal || "N/A",
@@ -39,6 +40,10 @@ const ThreeDMeasurement = () => {
       top_area: result?.top_area || "N/A",
       side_area: result?.side_area || "N/A",
       volume: result?.volume || "N/A",
+      top_edges: result?.top_edges || {},
+      side_right_edge: result?.side_right_edge || "N/A",
+      side_bottom_edge: result?.side_bottom_edge || "N/A",
+      side_left_edge: result?.side_left_edge || "N/A",
     };
 
     const updatedLogs = [...measurementLogs, newLog]; // 新しいログを追加
@@ -162,7 +167,7 @@ const ThreeDMeasurement = () => {
           },
         }
       );
-
+      console.log(response.data);
       if (response.data) {
         const {
           top_vertical,
@@ -171,7 +176,25 @@ const ThreeDMeasurement = () => {
           top_area,
           side_area,
           volume,
+          top_edges,
+          side_right_edge,
+          side_bottom_edge,
+          side_left_edge,
         } = response.data;
+
+        // resultに計測結果をセット
+        setResult({
+          top_vertical,
+          top_horizontal,
+          side_height,
+          top_area,
+          side_area,
+          volume,
+          top_edges,
+          side_right_edge,
+          side_bottom_edge,
+          side_left_edge,
+        });
 
         // レスポンスデータをメッセージとして更新
         updateMessage(
@@ -183,19 +206,26 @@ const ThreeDMeasurement = () => {
             側面の高さ: {side_height},<br />
             天面面積: {top_area},<br />
             側面面積: {side_area},<br />
-            体積: {volume}
+            体積: {volume},<br />
+            <br />
+            天面の各辺の長さ:
+            <br />
+            ・上辺: {top_edges?.top_edge} cm,
+            <br />
+            ・右辺: {top_edges?.right_edge} cm,
+            <br />
+            ・下辺: {top_edges?.bottom_edge} cm,
+            <br />
+            ・左辺: {top_edges?.left_edge} cm,
+            <br />
+            <br />
+            側面の各辺の長さ:
+            <br />
+            ・右辺: {side_right_edge},<br />
+            ・下辺: {side_bottom_edge},<br />
+            ・左辺: {side_left_edge},<br />
           </>
         );
-
-        // resultに計測結果をセット
-        setResult({
-          top_vertical,
-          top_horizontal,
-          side_height,
-          top_area,
-          side_area,
-          volume,
-        });
       } else {
         updateMessage("計測が完了しましたが、結果が得られませんでした。");
       }
@@ -489,14 +519,31 @@ const ThreeDMeasurement = () => {
           <h3>計測履歴</h3>
           {measurementLogs.length > 0 ? (
             <ul>
-              {measurementLogs.map((log, index) => (
-                <li key={index}>
-                  {log.location}: <br />縦 {log.top_vertical} , <br /> 横{" "}
-                  {log.top_horizontal} , <br /> 高さ {log.side_height} , <br />
-                  天面面積 {log.top_area} , <br /> 側面面積 {log.side_area} ,{" "}
+              {measurementLogs.map((log) => (
+                <li key={log.id}>
+                  {log.location}: <br />縦 {log.top_vertical} , <br />横{" "}
+                  {log.top_horizontal} , <br />
+                  高さ {log.side_height} , <br />
+                  天面面積 {log.top_area} , <br />
+                  側面面積 {log.side_area} , <br />
+                  体積 {log.volume},<br />
                   <br />
-                  体積 {log.volume}
+                  天面の各辺の長さ:
                   <br />
+                  ・上辺: {log.top_edges?.top_edge} cm,
+                  <br />
+                  ・右辺: {log.top_edges?.right_edge} cm,
+                  <br />
+                  ・下辺: {log.top_edges?.bottom_edge} cm,
+                  <br />
+                  ・左辺: {log.top_edges?.left_edge} cm,
+                  <br />
+                  <br />
+                  側面の各辺の長さ:
+                  <br />
+                  ・右辺: {log.side_right_edge},<br />
+                  ・下辺: {log.side_bottom_edge},<br />
+                  ・左辺: {log.side_left_edge},<br />
                   <button onClick={() => deleteMeasurementLog(log.id)}>
                     削除
                   </button>

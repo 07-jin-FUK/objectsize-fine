@@ -29,8 +29,10 @@ const SizeMeasurement = () => {
     }
 
     const newLog = {
+      id: Date.now(), // ユニークなIDを生成
       location: currentLocation,
-      length: result,
+      result: result, // 計測結果全体を保存
+      mode: measurementMode, // 測定モードも保存
     };
 
     const updatedLogs = [...measurementLogs, newLog];
@@ -176,6 +178,7 @@ const SizeMeasurement = () => {
     try {
       const formData = new FormData();
       formData.append("image", imageFile); // アップロードした画像を追加
+      formData.append("mode", measurementMode); // 測定モードを追加
       const points = measurementMode === "length" ? measurePoints : planePoints;
       formData.append("points", JSON.stringify([...scalePoints, ...points]));
 
@@ -203,11 +206,19 @@ const SizeMeasurement = () => {
 
       if (response.data.measured_length) {
         setResult(response.data.measured_length);
-        setMessage(`計測結果: ${response.data.measured_length} cm`);
+        setMessage(`計測結果: ${response.data.measured_length}㎝ `);
       } else if (response.data.measured_area) {
         setResult(response.data.measured_area);
         setMessage(
-          `計測結果: 面積 ${response.data.measured_area} cm²\n上辺: ${response.data.topEdge}cm, 右辺: ${response.data.rightEdge}cm, 下辺: ${response.data.bottomEdge}cm, 左辺: ${response.data.leftEdge}cm`
+          <>
+            計測結果:（問題なければメモボタン推奨）
+            <br />
+            面積: {result.measured_area},<br />
+            上辺:{result.plane_edges.top_edge},<br />
+            右辺: {result.plane_edges.right_edge},<br />
+            下辺: {result.plane_edges.bottom_edge},<br />
+            左辺:{result.plane_edges.left_edge},<br />
+          </>
         );
       } else {
         setMessage("計測に失敗しました。");
@@ -283,10 +294,10 @@ const SizeMeasurement = () => {
             />
             <button onClick={saveMeasurementLog}>メモ</button>
             <button className="allResetButton" onClick={resetEverything}>
-              違う写真でサイズを測る
+              写真を変更する
             </button>
             <button className="sameResetButton" onClick={resetMeasurePoints}>
-              同じ写真で別の部分を計測する
+              別の部分を計測する
             </button>
           </div>
         )}
@@ -538,16 +549,28 @@ const SizeMeasurement = () => {
         </div>
       )}
 
-      {/* 保存された計測結果を表示 */}
       <div className="measurementLogs">
         <h3>計測履歴</h3>
 
         {measurementLogs.length > 0 ? (
           <>
             <ul>
-              {measurementLogs.map((log, index) => (
-                <li key={index}>
-                  {log.location} - {log.length} cm
+              {measurementLogs.map((log) => (
+                <li key={log.id}>
+                  <p>計測箇所: {log.location}</p>
+                  {log.mode === "length" && log.result.measured_length && (
+                    <p>測定された長さ: {log.result.measured_length} cm</p>
+                  )}
+                  {log.mode === "plane" && log.result.plane_edges && (
+                    <>
+                      <p>測定された面積: {log.result.measured_area} cm²</p>
+                      <p>上辺: {log.result.plane_edges.top_edge} cm</p>
+                      <p>右辺: {log.result.plane_edges.right_edge} cm</p>
+                      <p>下辺: {log.result.plane_edges.bottom_edge} cm</p>
+                      <p>左辺: {log.result.plane_edges.left_edge} cm</p>
+                    </>
+                  )}
+                  {/* 他のモードの場合の表示も追加できます */}
                   <button onClick={() => deleteLog(log.id)}>削除</button>
                 </li>
               ))}
