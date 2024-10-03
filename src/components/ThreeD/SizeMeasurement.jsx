@@ -13,9 +13,11 @@ const SizeMeasurement = () => {
   const imageRef = useRef(null);
   const [imageFile, setImageFile] = useState(null); // アップロードされた画像ファイル
   const [messageHistory, setMessageHistory] = useState([]); // メッセージ履歴用
-  const [measurementLogs, setMeasurementLogs] = useState(
-    JSON.parse(localStorage.getItem("measurementLogs")) || []
-  );
+  const [measurementLogs, setMeasurementLogs] = useState(() => {
+    const savedLogs = localStorage.getItem("measurementLogs");
+    return savedLogs ? JSON.parse(savedLogs) : [];
+  });
+
   const [currentLocation, setCurrentLocation] = useState(""); // 入力ボックスの値を管理
   const [isLoading, setIsLoading] = useState(false); // ローディング状態を追加
   const [measurementMode, setMeasurementMode] = useState(null); // 測定モード
@@ -205,19 +207,24 @@ const SizeMeasurement = () => {
       );
 
       if (response.data.measured_length) {
-        setResult(response.data.measured_length);
+        setResult(response.data);
         setMessage(`計測結果: ${response.data.measured_length}㎝ `);
       } else if (response.data.measured_area) {
-        setResult(response.data.measured_area);
+        setResult(response.data);
         setMessage(
           <>
             計測結果:（問題なければメモボタン推奨）
             <br />
-            面積: {result.measured_area},<br />
-            上辺:{result.plane_edges.top_edge},<br />
-            右辺: {result.plane_edges.right_edge},<br />
-            下辺: {result.plane_edges.bottom_edge},<br />
-            左辺:{result.plane_edges.left_edge},<br />
+            面積: {response.data.measured_area}cm²,
+            <br />
+            上辺: {response.data.plane_edges.top_edge}cm,
+            <br />
+            右辺: {response.data.plane_edges.right_edge}cm,
+            <br />
+            下辺: {response.data.plane_edges.bottom_edge}cm,
+            <br />
+            左辺: {response.data.plane_edges.left_edge}cm,
+            <br />
           </>
         );
       } else {
@@ -268,6 +275,7 @@ const SizeMeasurement = () => {
     setIsReadyForMeasurement(false);
     setImageSrc(null); // 画像もリセット
     setImageFile(null); // アップロードされたファイルもリセット
+    setMeasurementMode(null); // 測定モードをリセット
   };
 
   return (
@@ -553,29 +561,27 @@ const SizeMeasurement = () => {
         <h3>計測履歴</h3>
 
         {measurementLogs.length > 0 ? (
-          <>
-            <ul>
-              {measurementLogs.map((log) => (
-                <li key={log.id}>
-                  <p>計測箇所: {log.location}</p>
-                  {log.mode === "length" && log.result.measured_length && (
-                    <p>測定された長さ: {log.result.measured_length} cm</p>
-                  )}
-                  {log.mode === "plane" && log.result.plane_edges && (
-                    <>
-                      <p>測定された面積: {log.result.measured_area} cm²</p>
-                      <p>上辺: {log.result.plane_edges.top_edge} cm</p>
-                      <p>右辺: {log.result.plane_edges.right_edge} cm</p>
-                      <p>下辺: {log.result.plane_edges.bottom_edge} cm</p>
-                      <p>左辺: {log.result.plane_edges.left_edge} cm</p>
-                    </>
-                  )}
-                  {/* 他のモードの場合の表示も追加できます */}
-                  <button onClick={() => deleteLog(log.id)}>削除</button>
-                </li>
-              ))}
-            </ul>
-          </>
+          <ul>
+            {measurementLogs.map((log) => (
+              <li key={log.id}>
+                <p>計測箇所: {log.location}</p>
+                {log.mode === "length" && log.result?.measured_length && (
+                  <p>長さ: {log.result.measured_length} cm</p>
+                )}
+                {log.mode === "plane" && log.result?.plane_edges && (
+                  <>
+                    <p>測定された面積: {log.result.measured_area} cm²</p>
+                    <p>上辺: {log.result.plane_edges.top_edge} cm</p>
+                    <p>右辺: {log.result.plane_edges.right_edge} cm</p>
+                    <p>下辺: {log.result.plane_edges.bottom_edge} cm</p>
+                    <p>左辺: {log.result.plane_edges.left_edge} cm</p>
+                  </>
+                )}
+                {/* 他のモードの場合の表示も追加できます */}
+                <button onClick={() => deleteLog(log.id)}>削除</button>
+              </li>
+            ))}
+          </ul>
         ) : (
           <p>計測履歴がありません</p>
         )}

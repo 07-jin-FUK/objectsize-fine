@@ -550,9 +550,10 @@ const CylinderMeasurement = () => {
               {measurementLogs.map((log, index) => (
                 <li key={index}>
                   {log.location}: <br />
-                  直径 {log.diameter} , <br /> 高さ {log.height} , <br /> 天面積{" "}
-                  {log.topArea} , <br /> 側面積 {log.sideArea} , <br /> 体積{" "}
-                  {log.volume}
+                  直径 {log.result.diameter} , <br /> 高さ {log.result.height} ,{" "}
+                  <br /> 天面積
+                  {log.result.topArea} , <br /> 側面積 {log.result.sideArea} ,{" "}
+                  <br /> 体積 {log.result.volume}
                   <button onClick={() => deleteLog(log.id)}>削除</button>
                 </li>
               ))}
