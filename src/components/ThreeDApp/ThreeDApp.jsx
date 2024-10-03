@@ -1283,11 +1283,10 @@ const ThreeDApp = () => {
             <ul>
               {binedLogs.map((log, index) => (
                 <li key={index}>
-                  {/* 各ログの内容がある場合のみ、それに応じて表示を切り替える */}
                   {Object.entries(log).map(([key, value]) => {
                     if (value && key !== "id") {
                       let label = "";
-                      let unit = ""; // 単位を初期化
+                      let unit = "";
 
                       // キーに応じて表示ラベルと単位を設定
                       switch (key) {
@@ -1346,12 +1345,31 @@ const ThreeDApp = () => {
                           break;
                       }
 
-                      return (
-                        <p key={key}>
-                          {label}: {value}
-                          {unit && ` ${unit}`}
-                        </p>
-                      );
+                      if (typeof value === "object" && value !== null) {
+                        // オブジェクトの内容を展開して表示
+                        return (
+                          <div key={key}>
+                            <p>{label}:</p>
+                            <ul>
+                              {Object.entries(value).map(
+                                ([subKey, subValue]) => (
+                                  <li key={subKey}>
+                                    {subKey}: {subValue}
+                                  </li>
+                                )
+                              )}
+                            </ul>
+                          </div>
+                        );
+                      } else {
+                        // valueがオブジェクトでない場合
+                        return (
+                          <p key={key}>
+                            {label}: {value}
+                            {unit && ` ${unit}`}
+                          </p>
+                        );
+                      }
                     }
                     return null;
                   })}
