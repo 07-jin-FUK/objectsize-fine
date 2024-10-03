@@ -15,6 +15,7 @@ const CylinderMeasurement = () => {
   const [measurementLogs, setMeasurementLogs] = useState(
     JSON.parse(localStorage.getItem("cylinderLogs")) || []
   );
+
   const [currentLocation, setCurrentLocation] = useState(""); // 入力ボックスの値を管理
   const [isLoading, setIsLoading] = useState(false); // ローディング状態を追加
 
@@ -26,6 +27,7 @@ const CylinderMeasurement = () => {
     }
 
     const newLog = {
+      id: Date.now(), // 一意のIDを追加
       location: currentLocation,
       diameter: result?.diameter || "N/A",
       height: result?.height || "N/A",
@@ -550,10 +552,9 @@ const CylinderMeasurement = () => {
               {measurementLogs.map((log, index) => (
                 <li key={index}>
                   {log.location}: <br />
-                  直径 {log.result.diameter} , <br /> 高さ {log.result.height} ,{" "}
-                  <br /> 天面積
-                  {log.result.topArea} , <br /> 側面積 {log.result.sideArea} ,{" "}
-                  <br /> 体積 {log.result.volume}
+                  直径 {log.diameter} , <br /> 高さ {log.height} , <br /> 天面積{" "}
+                  {log.topArea} , <br /> 側面積 {log.sideArea} , <br /> 体積{" "}
+                  {log.volume}
                   <button onClick={() => deleteLog(log.id)}>削除</button>
                 </li>
               ))}
