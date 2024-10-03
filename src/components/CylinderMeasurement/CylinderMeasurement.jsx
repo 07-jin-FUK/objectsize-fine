@@ -12,7 +12,9 @@ const CylinderMeasurement = () => {
   const imageRef = useRef(null);
   const [imageFile, setImageFile] = useState(null);
   const [result, setResult] = useState(null); // 計測結果
-  const [measurementLogs, setMeasurementLogs] = useState([]); // 計測結果のログを管理
+  const [measurementLogs, setMeasurementLogs] = useState(
+    JSON.parse(localStorage.getItem("cylinderLogs")) || []
+  );
   const [currentLocation, setCurrentLocation] = useState(""); // 入力ボックスの値を管理
   const [isLoading, setIsLoading] = useState(false); // ローディング状態を追加
 
@@ -32,8 +34,16 @@ const CylinderMeasurement = () => {
       volume: result?.volume || "N/A",
     };
 
-    setMeasurementLogs([...measurementLogs, newLog]); // 新しいログを追加
-    setCurrentLocation(""); // 入力ボックスをクリア
+    const updatedLogs = [...measurementLogs, newLog];
+    setMeasurementLogs(updatedLogs);
+    localStorage.setItem("cylinderLogs", JSON.stringify(updatedLogs));
+    setCurrentLocation("");
+  };
+
+  const deleteLog = (id) => {
+    const updatedLogs = measurementLogs.filter((log) => log.id !== id);
+    setMeasurementLogs(updatedLogs);
+    localStorage.setItem("cylinderLogs", JSON.stringify(updatedLogs));
   };
 
   const onDrop = (acceptedFiles) => {
@@ -539,9 +549,11 @@ const CylinderMeasurement = () => {
             <ul>
               {measurementLogs.map((log, index) => (
                 <li key={index}>
-                  {log.location}: 直径 {log.diameter} , <br /> 高さ {log.height}{" "}
-                  , <br /> 天面積 {log.topArea} , <br /> 側面積 {log.sideArea} ,{" "}
-                  <br /> 体積 {log.volume}
+                  {log.location}: <br />
+                  直径 {log.diameter} , <br /> 高さ {log.height} , <br /> 天面積{" "}
+                  {log.topArea} , <br /> 側面積 {log.sideArea} , <br /> 体積{" "}
+                  {log.volume}
+                  <button onClick={() => deleteLog(log.id)}>削除</button>
                 </li>
               ))}
             </ul>

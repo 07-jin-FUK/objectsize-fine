@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { useDropzone } from "react-dropzone";
 import axios from "axios";
 import "./ThreeDMeasurement.css";
@@ -12,11 +12,19 @@ const ThreeDMeasurement = () => {
   const imageRef = useRef(null);
   const [imageFile, setImageFile] = useState(null);
   const [result, setResult] = useState(null); // 計測結果
-  const [measurementLogs, setMeasurementLogs] = useState([]); // 計測結果のログを管理
+  const [measurementLogs, setMeasurementLogs] = useState(
+    JSON.parse(localStorage.getItem("threeDMeasurementLogs")) || []
+  ); // 計測結果のログを管理
   const [currentLocation, setCurrentLocation] = useState(""); // 入力ボックスの値を管理
   const [isLoading, setIsLoading] = useState(false); // ローディング状態を追加
 
-  // 計測結果を保存する機能
+  useEffect(() => {
+    const savedLogs = localStorage.getItem("threeDMeasurementLogs");
+    if (savedLogs) {
+      setMeasurementLogs(JSON.parse(savedLogs));
+    }
+  }, []);
+
   const saveMeasurementLog = () => {
     if (!currentLocation) {
       alert("計測場所を入力してください。");
@@ -33,8 +41,20 @@ const ThreeDMeasurement = () => {
       volume: result?.volume || "N/A",
     };
 
-    setMeasurementLogs([...measurementLogs, newLog]); // 新しいログを追加
+    const updatedLogs = [...measurementLogs, newLog]; // 新しいログを追加
+    setMeasurementLogs(updatedLogs);
     setCurrentLocation(""); // 入力ボックスをクリア
+
+    // ローカルストレージに保存
+    localStorage.setItem("threeDMeasurementLogs", JSON.stringify(updatedLogs));
+  };
+
+  const deleteMeasurementLog = (id) => {
+    const updatedLogs = measurementLogs.filter((log) => log.id !== id);
+    setMeasurementLogs(updatedLogs);
+
+    // ローカルストレージからも削除
+    localStorage.setItem("threeDMeasurementLogs", JSON.stringify(updatedLogs));
   };
 
   const onDrop = (acceptedFiles) => {
@@ -476,6 +496,10 @@ const ThreeDMeasurement = () => {
                   天面面積 {log.top_area} , <br /> 側面面積 {log.side_area} ,{" "}
                   <br />
                   体積 {log.volume}
+                  <br />
+                  <button onClick={() => deleteMeasurementLog(log.id)}>
+                    削除
+                  </button>
                 </li>
               ))}
             </ul>

@@ -13,9 +13,38 @@ const SizeMeasurement = () => {
   const imageRef = useRef(null);
   const [imageFile, setImageFile] = useState(null); // アップロードされた画像ファイル
   const [messageHistory, setMessageHistory] = useState([]); // メッセージ履歴用
-  const [measurementLogs, setMeasurementLogs] = useState([]); // 計測結果のログを管理
+  const [measurementLogs, setMeasurementLogs] = useState(
+    JSON.parse(localStorage.getItem("measurementLogs")) || []
+  );
   const [currentLocation, setCurrentLocation] = useState(""); // 入力ボックスの値を管理
   const [isLoading, setIsLoading] = useState(false); // ローディング状態を追加
+  const [measurementMode, setMeasurementMode] = useState(null); // 測定モード
+  const [planePoints, setPlanePoints] = useState([]); // 平面モードの4点
+
+  // 計測結果をローカルストレージに保存する機能
+  const saveMeasurementLog = () => {
+    if (!currentLocation) {
+      alert("計測場所を入力してください。");
+      return;
+    }
+
+    const newLog = {
+      location: currentLocation,
+      length: result,
+    };
+
+    const updatedLogs = [...measurementLogs, newLog];
+    setMeasurementLogs(updatedLogs);
+    localStorage.setItem("measurementLogs", JSON.stringify(updatedLogs)); // ローカルストレージに保存
+    setCurrentLocation(""); // 入力ボックスをクリア
+  };
+
+  // 計測結果のログを削除する機能
+  const deleteLog = (id) => {
+    const updatedLogs = measurementLogs.filter((log) => log.id !== id);
+    setMeasurementLogs(updatedLogs);
+    localStorage.setItem("measurementLogs", JSON.stringify(updatedLogs)); // ローカルストレージを更新
+  };
 
   // 画像がアップロードされたときに呼ばれる関数
   const onDrop = (acceptedFiles) => {
@@ -26,11 +55,12 @@ const SizeMeasurement = () => {
       setImageSrc(reader.result); // 画像の表示
       setScalePoints([]); // スケールポイントをリセット
       setMeasurePoints([]); // 測定ポイントをリセット
+      setPlanePoints([]); // 平面測定ポイントをリセット
       updateMessage(
         <>
           画像を確認しました。基準を測定します。
           <br />
-          1点目：千円札の左上をクリックしてください。
+          今回測りたいものは長さですか？平面ですか？
         </>
       );
       setIsReadyForMeasurement(false); // 計測ボタンを非表示に
@@ -40,6 +70,17 @@ const SizeMeasurement = () => {
   };
 
   const { getRootProps, getInputProps } = useDropzone({ onDrop });
+
+  const handleModeSelection = (mode) => {
+    setMeasurementMode(mode);
+    setMessage(
+      <>
+        目的を確認しました。
+        <br />
+        1点目:千円札の左上をクリックしてください。
+      </>
+    );
+  };
 
   // 画像上でクリックして4点の位置を取得
   const handleImageClick = (e) => {
@@ -58,6 +99,7 @@ const SizeMeasurement = () => {
       .catch((error) => {
         console.error("Error warming up server:", error);
       });
+
     const rect = imageRef.current.getBoundingClientRect();
     const scaleX = imageRef.current.naturalWidth / rect.width;
     const scaleY = imageRef.current.naturalHeight / rect.height;
@@ -75,13 +117,20 @@ const SizeMeasurement = () => {
         updateMessage("4点目: 千円札の左下をクリックしてください。");
       } else if (scalePoints.length === 3) {
         updateMessage(
-          <>
-            基準が設定されました。 <br />
-            次に測りたい目的物の片端をクリックしてください。
-          </>
+          measurementMode === "length" ? (
+            <>
+              基準が設定されました。 <br />
+              次に測りたい目的物の片端をクリックしてください。
+            </>
+          ) : (
+            <>
+              基準が設定されました。 <br />
+              次に測りたい目的平面の左上をクリックしてください。
+            </>
+          )
         );
       }
-    } else if (measurePoints.length < 2) {
+    } else if (measurementMode === "length" && measurePoints.length < 2) {
       setMeasurePoints([...measurePoints, { x, y }]);
 
       if (measurePoints.length === 0) {
@@ -96,7 +145,26 @@ const SizeMeasurement = () => {
         );
         setIsReadyForMeasurement(true); // 計測ボタンを表示
       }
+    } else if (measurementMode === "plane" && planePoints.length < 4) {
+      setPlanePoints([...planePoints, { x, y }]);
+
+      if (planePoints.length === 0) {
+        setMessage("2点目: 平面の右上をクリックしてください。");
+      } else if (planePoints.length === 1) {
+        setMessage("3点目: 平面の右下をクリックしてください。");
+      } else if (planePoints.length === 2) {
+        setMessage("4点目: 平面の左下をクリックしてください。");
+      } else if (planePoints.length === 3) {
+        setMessage("すべてのポイントが選択されました。計測を開始できます。");
+        setIsReadyForMeasurement(true);
+      }
     }
+  };
+
+  const calculateDistance = (point1, point2) => {
+    return Math.sqrt(
+      Math.pow(point2.x - point1.x, 2) + Math.pow(point2.y - point1.y, 2)
+    );
   };
 
   // 画像をPythonバックエンドに送信して処理を依頼
@@ -108,8 +176,20 @@ const SizeMeasurement = () => {
     try {
       const formData = new FormData();
       formData.append("image", imageFile); // アップロードした画像を追加
-      const allPoints = [...scalePoints, ...measurePoints];
-      formData.append("points", JSON.stringify(allPoints)); // クリックされたスケール4点と測定2点を追加
+      const points = measurementMode === "length" ? measurePoints : planePoints;
+      formData.append("points", JSON.stringify([...scalePoints, ...points]));
+
+      if (measurementMode === "plane" && planePoints.length === 4) {
+        const topEdge = calculateDistance(planePoints[0], planePoints[1]); // 上辺
+        const rightEdge = calculateDistance(planePoints[1], planePoints[2]); // 右辺
+        const bottomEdge = calculateDistance(planePoints[2], planePoints[3]); // 下辺
+        const leftEdge = calculateDistance(planePoints[3], planePoints[0]); // 左辺
+
+        formData.append("topEdge", topEdge);
+        formData.append("rightEdge", rightEdge);
+        formData.append("bottomEdge", bottomEdge);
+        formData.append("leftEdge", leftEdge);
+      }
 
       const response = await axios.post(
         "https://python-api-5yn6.onrender.com/process-image",
@@ -122,10 +202,15 @@ const SizeMeasurement = () => {
       );
 
       if (response.data.measured_length) {
-        setResult(response.data.measured_length); // 結果をセット
-        setMessage(`計測結果:約 ${response.data.measured_length} cm`); // 計測結果をメッセージに反映
+        setResult(response.data.measured_length);
+        setMessage(`計測結果: ${response.data.measured_length} cm`);
+      } else if (response.data.measured_area) {
+        setResult(response.data.measured_area);
+        setMessage(
+          `計測結果: 面積 ${response.data.measured_area} cm²\n上辺: ${response.data.topEdge}cm, 右辺: ${response.data.rightEdge}cm, 下辺: ${response.data.bottomEdge}cm, 左辺: ${response.data.leftEdge}cm`
+        );
       } else {
-        setMessage("計測が完了しましたが、結果が得られませんでした。");
+        setMessage("計測に失敗しました。");
       }
     } catch (error) {
       console.error("計測中にエラーが発生しました:", error);
@@ -147,7 +232,7 @@ const SizeMeasurement = () => {
       <>
         スケールをリセットしました。
         <br />
-        千円札の左上をクリックしてください。
+        千円札を横に見て左上をクリックしてください。
       </>
     );
   };
@@ -174,21 +259,6 @@ const SizeMeasurement = () => {
     setImageFile(null); // アップロードされたファイルもリセット
   };
 
-  const saveMeasurementLog = () => {
-    if (!currentLocation) {
-      alert("計測場所を入力してください。");
-      return;
-    }
-
-    const newLog = {
-      location: currentLocation,
-      length: result,
-    };
-
-    setMeasurementLogs([...measurementLogs, newLog]); // 新しいログを追加
-    setCurrentLocation(""); // 入力ボックスをクリア
-  };
-
   return (
     <div className="container">
       {/* Dropzone部分 */}
@@ -196,7 +266,6 @@ const SizeMeasurement = () => {
         <input {...getInputProps()} />
         <p>ここに画像をドラッグ＆ドロップ、またはクリックしてファイルを選択</p>
       </div>
-      {/* メッセージを表示 */}
       <div className="messageContainer">
         <p>{message}</p>
         {isLoading && (
@@ -206,11 +275,35 @@ const SizeMeasurement = () => {
         )}
         {result && (
           <div className="resultContainer">
+            <input
+              type="text"
+              placeholder="計測場所を入力"
+              value={currentLocation}
+              onChange={(e) => setCurrentLocation(e.target.value)}
+            />
+            <button onClick={saveMeasurementLog}>メモ</button>
             <button className="allResetButton" onClick={resetEverything}>
               違う写真でサイズを測る
             </button>
             <button className="sameResetButton" onClick={resetMeasurePoints}>
               同じ写真で別の部分を計測する
+            </button>
+          </div>
+        )}
+
+        {imageSrc && !measurementMode && (
+          <div className="mode-selection">
+            <button
+              className="lengthButton"
+              onClick={() => handleModeSelection("length")}
+            >
+              長さを測定
+            </button>
+            <button
+              className="areaButton"
+              onClick={() => handleModeSelection("plane")}
+            >
+              平面を測定
             </button>
           </div>
         )}
@@ -277,6 +370,24 @@ const SizeMeasurement = () => {
               }}
             />
           ))}
+          {/* 平面設定用のクリックされた場所にマーカーを表示（赤） */}
+          {planePoints.map((point, index) => (
+            <div
+              key={index}
+              className="pointMarker"
+              style={{
+                backgroundColor: "blue",
+                left:
+                  point.x /
+                    (imageRef.current.naturalWidth / imageRef.current.width) -
+                  5,
+                top:
+                  point.y /
+                    (imageRef.current.naturalHeight / imageRef.current.height) -
+                  5,
+              }}
+            />
+          ))}
 
           {/* 測定用のクリックされた場所にマーカーを表示（青） */}
           {measurePoints.map((point, index) => (
@@ -296,6 +407,58 @@ const SizeMeasurement = () => {
               }}
             />
           ))}
+          {/* 目的平面の4点を結ぶ線を描画 */}
+          {planePoints.length > 1 && (
+            <svg className="svgOverlay">
+              {planePoints.map((point, index) => {
+                if (index === 0) return null;
+                return (
+                  <line
+                    key={index}
+                    x1={
+                      planePoints[index - 1].x /
+                      (imageRef.current.naturalWidth / imageRef.current.width)
+                    }
+                    y1={
+                      planePoints[index - 1].y /
+                      (imageRef.current.naturalHeight / imageRef.current.height)
+                    }
+                    x2={
+                      point.x /
+                      (imageRef.current.naturalWidth / imageRef.current.width)
+                    }
+                    y2={
+                      point.y /
+                      (imageRef.current.naturalHeight / imageRef.current.height)
+                    }
+                    className="blueLine" // 青色の線を適用
+                  />
+                );
+              })}
+              {/* 平面の4点が完成したら、四角形を描画 */}
+              {planePoints.length === 4 && (
+                <line
+                  x1={
+                    planePoints[3].x /
+                    (imageRef.current.naturalWidth / imageRef.current.width)
+                  }
+                  y1={
+                    planePoints[3].y /
+                    (imageRef.current.naturalHeight / imageRef.current.height)
+                  }
+                  x2={
+                    planePoints[0].x /
+                    (imageRef.current.naturalWidth / imageRef.current.width)
+                  }
+                  y2={
+                    planePoints[0].y /
+                    (imageRef.current.naturalHeight / imageRef.current.height)
+                  }
+                  className="blueLine" // 青色の線を適用
+                />
+              )}
+            </svg>
+          )}
 
           {/* 点と点を結ぶ線を描画 */}
           {scalePoints.length > 1 && (
@@ -378,26 +541,14 @@ const SizeMeasurement = () => {
       {/* 保存された計測結果を表示 */}
       <div className="measurementLogs">
         <h3>計測履歴</h3>
-        {/* 計測結果の表示と入力ボックス、保存ボタン */}
-        {result && (
-          <div className="measurementResult">
-            <p>計測結果: 約 {result} cm</p>
-            <input
-              type="text"
-              placeholder="計測場所を入力"
-              value={currentLocation}
-              onChange={(e) => setCurrentLocation(e.target.value)}
-            />
-            <button onClick={saveMeasurementLog}>メモ</button>
-          </div>
-        )}
+
         {measurementLogs.length > 0 ? (
           <>
-            <h3>計測箇所</h3>
             <ul>
               {measurementLogs.map((log, index) => (
                 <li key={index}>
                   {log.location} - {log.length} cm
+                  <button onClick={() => deleteLog(log.id)}>削除</button>
                 </li>
               ))}
             </ul>

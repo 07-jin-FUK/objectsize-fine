@@ -6,8 +6,29 @@ import Sidebar from "./Sidebar.jsx";
 import Title from "../Common/Title.jsx";
 
 const ThreeDApp = () => {
+  const [measurementLogs, setMeasurementLogs] = useState(
+    JSON.parse(localStorage.getItem("measurementLogs")) || []
+  );
+  const [cylinderLogs, setCylinderLogs] = useState(
+    JSON.parse(localStorage.getItem("cylinderLogs")) || []
+  );
+  const [threeDMeasurementLogs, setThreeDMeasurementLogs] = useState(
+    JSON.parse(localStorage.getItem("threeDMeasurementLogs")) || []
+  );
+
+  // 両方のログを統合する
+  const binedLogs = [
+    ...measurementLogs,
+    ...cylinderLogs,
+    ...threeDMeasurementLogs,
+  ];
+
+  useEffect(() => {
+    console.log("Measurement Logs: ", measurementLogs);
+    console.log("Cylinder Logs: ", cylinderLogs);
+    console.log("ThreeDMeasurement Logs: ", threeDMeasurementLogs);
+  }, [measurementLogs, cylinderLogs, threeDMeasurementLogs]);
   const [activePanel, setActivePanel] = useState(null); // 現在表示しているパネルの状態
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true); // サイドバーの状態
   const [dimensions, setDimensions] = useState({
     width: 400,
     height: 300,
@@ -916,7 +937,7 @@ const ThreeDApp = () => {
       onMouseMove={resizePanel}
       onMouseUp={stopResizing}
     >
-      <div className={`sidebar ${isSidebarOpen ? "" : "sidebar-closed"}`}>
+      <div>
         <Sidebar
           openPopup={showPanel}
           resetAll={resetAll}
@@ -1256,7 +1277,30 @@ const ThreeDApp = () => {
             <button onClick={resetCameraPosition}>オブジェクトを再描画</button>
           </div>
         )}
-
+        {activePanel === "importLog" && (
+          <div className="section">
+            <h3>サイズ測定の結果をインポートします。</h3>
+            <ul>
+              {binedLogs.map((log, index) => (
+                <li key={index}>
+                  {/* 各ログの内容がある場合のみ、それに応じて表示を切り替える */}
+                  {log.location && <p>名前: {log.location}</p>}
+                  {log.length && <p>長さ: {log.length}cm</p>}
+                  {log.width && <p>幅: {log.width}cm</p>}
+                  {log.height && <p>高さ: {log.height}cm</p>}
+                  {log.depth && <p>奥行き: {log.depth}cm</p>}
+                  {log.top_vertical && (
+                    <p>天面の縦サイズ: {log.top_vertical}cm</p>
+                  )}
+                  {log.top_horizontal && (
+                    <p>天面の横サイズ: {log.top_horizontal}cm</p>
+                  )}
+                  {log.side_height && <p>側面の高さ: {log.side_height}cm</p>}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
         {activePanel === "objectLog" && (
           <div className="section">
             <h3>オブジェクトログ</h3>

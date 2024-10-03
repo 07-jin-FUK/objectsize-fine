@@ -79,6 +79,9 @@ const Sidebar = ({
       <button onClick={() => openPopup("objectControl")}>
         オブジェクトの操作
       </button>
+      <button onClick={() => openPopup("importLog")}>
+        サイズ測定からインポート
+      </button>
       <button onClick={() => openPopup("objectLog")}>オブジェクトログ</button>
       <button onClick={resetToInitialPositions}>空間を元の位置に戻す</button>
       <button onClick={handleShowTopView}>天面図を確認</button>
