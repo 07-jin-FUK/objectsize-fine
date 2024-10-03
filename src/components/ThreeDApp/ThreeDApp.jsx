@@ -931,6 +931,29 @@ const ThreeDApp = () => {
     return canvas;
   };
 
+  const renderValue = (key, value, label, unit) => {
+    if (typeof value === "object" && value !== null) {
+      return (
+        <div key={key}>
+          <p>{label}:</p>
+          <ul>
+            {Object.entries(value).map(([subKey, subValue]) => {
+              const subLabel = subKey;
+              return renderValue(subKey, subValue, subLabel, unit);
+            })}
+          </ul>
+        </div>
+      );
+    } else {
+      return (
+        <p key={key}>
+          {label}: {value}
+          {unit && ` ${unit}`}
+        </p>
+      );
+    }
+  };
+
   return (
     <div
       className={`container1`}
@@ -1284,6 +1307,7 @@ const ThreeDApp = () => {
               {binedLogs.map((log, index) => (
                 <li key={index}>
                   {Object.entries(log).map(([key, value]) => {
+                    console.log("Key:", key, "Value:", value);
                     if (value && key !== "id") {
                       let label = "";
                       let unit = "";
@@ -1370,6 +1394,7 @@ const ThreeDApp = () => {
                           </p>
                         );
                       }
+                      return renderValue(key, value, label, unit);
                     }
                     return null;
                   })}
