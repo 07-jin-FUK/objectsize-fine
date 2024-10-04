@@ -705,7 +705,6 @@ const ThreeDApp = ({ handleBackToTop }) => {
     cameraRef.current.aspect = originalSize.x / originalSize.y;
     cameraRef.current.updateProjectionMatrix();
   };
-
   const drawTopViewCanvasBW = () => {
     const canvas = document.createElement("canvas");
     const ctx = canvas.getContext("2d");
@@ -750,70 +749,132 @@ const ThreeDApp = ({ handleBackToTop }) => {
 
     // オブジェクトを描画（すべてのオブジェクトのサイズや位置を反映）
     objectsRef.current.forEach((obj, index) => {
-      const { width, depth } = obj.object.geometry.parameters;
-      const objWidth = width * scale;
-      const objDepth = depth * scale;
+      const geometry = obj.object.geometry;
+      if (!geometry) return; // geometryが存在しない場合はスキップ
 
-      // オブジェクトをグレーで描画（白黒バージョン）
-      ctx.fillStyle = "#888888";
-      ctx.fillRect(
-        margin + (roomWidth / 2 + obj.object.position.x) * scale - objWidth / 2,
-        margin + (roomDepth / 2 + obj.object.position.z) * scale - objDepth / 2,
-        objWidth,
-        objDepth
-      );
+      let objWidth, objDepth;
 
-      // オブジェクトの横幅（上辺に平行）
-      ctx.beginPath();
-      ctx.moveTo(
-        margin + (roomWidth / 2 + obj.object.position.x) * scale - objWidth / 2,
-        margin +
-          (roomDepth / 2 + obj.object.position.z) * scale -
-          objDepth / 2 -
-          10
-      );
-      ctx.lineTo(
-        margin + (roomWidth / 2 + obj.object.position.x) * scale + objWidth / 2,
-        margin +
-          (roomDepth / 2 + obj.object.position.z) * scale -
-          objDepth / 2 -
-          10
-      );
-      ctx.stroke();
-      ctx.fillText(
-        `Obj ${index + 1} W=${width} cm`,
-        margin + (roomWidth / 2 + obj.object.position.x) * scale - objWidth / 4,
-        margin +
-          (roomDepth / 2 + obj.object.position.z) * scale -
-          objDepth / 2 -
-          15
-      );
+      // キューブの場合
+      if (geometry instanceof THREE.BoxGeometry) {
+        const { width, depth } = geometry.parameters;
+        objWidth = width * scale;
+        objDepth = depth * scale;
 
-      // オブジェクトの奥行き（右辺に平行）
-      ctx.beginPath();
-      ctx.moveTo(
-        margin +
-          (roomWidth / 2 + obj.object.position.x) * scale +
-          objWidth / 2 +
-          10,
-        margin + (roomDepth / 2 + obj.object.position.z) * scale - objDepth / 2
-      );
-      ctx.lineTo(
-        margin +
-          (roomWidth / 2 + obj.object.position.x) * scale +
-          objWidth / 2 +
-          10,
-        margin + (roomDepth / 2 + obj.object.position.z) * scale + objDepth / 2
-      );
-      ctx.stroke();
-      ctx.fillText(
-        `D=${depth} cm`,
-        margin +
-          (roomWidth / 2 + obj.object.position.x) * scale +
-          objWidth / 2 +
-          15,
-        margin + (roomDepth / 2 + obj.object.position.z) * scale + objDepth / 4
-      );
+        // オブジェクトをグレーで描画（白黒バージョン）
+        ctx.fillStyle = "#888888";
+        ctx.fillRect(
+          margin +
+            (roomWidth / 2 + obj.object.position.x) * scale -
+            objWidth / 2,
+          margin +
+            (roomDepth / 2 + obj.object.position.z) * scale -
+            objDepth / 2,
+          objWidth,
+          objDepth
+        );
+      }
+      // 円柱の場合
+      else if (geometry instanceof THREE.CylinderGeometry) {
+        const radius = geometry.parameters.radiusTop * scale;
+
+        // 円柱をグレーで描画
+        ctx.fillStyle = "#888888";
+        ctx.beginPath();
+        ctx.arc(
+          margin + (roomWidth / 2 + obj.object.position.x) * scale,
+          margin + (roomDepth / 2 + obj.object.position.z) * scale,
+          radius,
+          0,
+          Math.PI * 2
+        );
+        ctx.fill();
+      }
+
+      // キューブの横幅表示
+      if (geometry instanceof THREE.BoxGeometry) {
+        ctx.beginPath();
+        ctx.moveTo(
+          margin +
+            (roomWidth / 2 + obj.object.position.x) * scale -
+            objWidth / 2,
+          margin +
+            (roomDepth / 2 + obj.object.position.z) * scale -
+            objDepth / 2 -
+            10
+        );
+        ctx.lineTo(
+          margin +
+            (roomWidth / 2 + obj.object.position.x) * scale +
+            objWidth / 2,
+          margin +
+            (roomDepth / 2 + obj.object.position.z) * scale -
+            objDepth / 2 -
+            10
+        );
+        ctx.stroke();
+        ctx.fillText(
+          `Obj ${index + 1} W=${geometry.parameters.width} cm`,
+          margin +
+            (roomWidth / 2 + obj.object.position.x) * scale -
+            objWidth / 4,
+          margin +
+            (roomDepth / 2 + obj.object.position.z) * scale -
+            objDepth / 2 -
+            15
+        );
+
+        // キューブの奥行き
+        ctx.beginPath();
+        ctx.moveTo(
+          margin +
+            (roomWidth / 2 + obj.object.position.x) * scale +
+            objWidth / 2 +
+            10,
+          margin +
+            (roomDepth / 2 + obj.object.position.z) * scale -
+            objDepth / 2
+        );
+        ctx.lineTo(
+          margin +
+            (roomWidth / 2 + obj.object.position.x) * scale +
+            objWidth / 2 +
+            10,
+          margin +
+            (roomDepth / 2 + obj.object.position.z) * scale +
+            objDepth / 2
+        );
+        ctx.stroke();
+        ctx.fillText(
+          `D=${geometry.parameters.depth} cm`,
+          margin +
+            (roomWidth / 2 + obj.object.position.x) * scale +
+            objWidth / 2 +
+            15,
+          margin +
+            (roomDepth / 2 + obj.object.position.z) * scale +
+            objDepth / 4
+        );
+      }
+      // 円柱の直径表示
+      else if (geometry instanceof THREE.CylinderGeometry) {
+        const radius = geometry.parameters.radiusTop * scale;
+        ctx.beginPath();
+        ctx.moveTo(
+          margin + (roomWidth / 2 + obj.object.position.x) * scale - radius,
+          margin + (roomDepth / 2 + obj.object.position.z) * scale
+        );
+        ctx.lineTo(
+          margin + (roomWidth / 2 + obj.object.position.x) * scale + radius,
+          margin + (roomDepth / 2 + obj.object.position.z) * scale
+        );
+        ctx.stroke();
+        // 円柱の直径ラベルを少し下にずらして表示
+        ctx.fillText(
+          `Obj ${index + 1} Diameter=${geometry.parameters.radiusTop * 2} cm`,
+          margin + (roomWidth / 2 + obj.object.position.x) * scale - radius / 2,
+          margin + (roomDepth / 2 + obj.object.position.z) * scale + 20 // ラベルを少し下に
+        );
+      }
     });
     return canvas;
   };
@@ -860,73 +921,134 @@ const ThreeDApp = ({ handleBackToTop }) => {
       margin + scaledRoomDepth / 2
     ); // 奥行き
 
-    // オブジェクトを描画（すべてのオブジェクトのサイズや位置を反映）
     objectsRef.current.forEach((obj, index) => {
-      const { width, depth } = obj.object.geometry.parameters;
-      const objWidth = width * scale;
-      const objDepth = depth * scale;
+      const geometry = obj.object.geometry;
+      if (!geometry) return; // geometryが存在しない場合はスキップ
 
-      // オブジェクトの色を設定（カラー版）
-      ctx.fillStyle = obj.object.material.color.getStyle();
-      ctx.fillRect(
-        margin + (roomWidth / 2 + obj.object.position.x) * scale - objWidth / 2,
-        margin + (roomDepth / 2 + obj.object.position.z) * scale - objDepth / 2,
-        objWidth,
-        objDepth
-      );
+      let objWidth, objDepth;
 
-      // オブジェクトの横幅（上辺に平行）
-      ctx.beginPath();
-      ctx.moveTo(
-        margin + (roomWidth / 2 + obj.object.position.x) * scale - objWidth / 2,
-        margin +
-          (roomDepth / 2 + obj.object.position.z) * scale -
-          objDepth / 2 -
-          10
-      );
-      ctx.lineTo(
-        margin + (roomWidth / 2 + obj.object.position.x) * scale + objWidth / 2,
-        margin +
-          (roomDepth / 2 + obj.object.position.z) * scale -
-          objDepth / 2 -
-          10
-      );
-      ctx.stroke();
-      ctx.fillStyle = "#000000";
-      ctx.fillText(
-        `Obj ${index + 1} W=${width} cm`,
-        margin + (roomWidth / 2 + obj.object.position.x) * scale - objWidth / 4,
-        margin +
-          (roomDepth / 2 + obj.object.position.z) * scale -
-          objDepth / 2 -
-          15
-      );
+      // キューブの場合
+      if (geometry instanceof THREE.BoxGeometry) {
+        const { width, depth } = geometry.parameters;
+        objWidth = width * scale;
+        objDepth = depth * scale;
 
-      // オブジェクトの奥行き（右辺に平行）
-      ctx.beginPath();
-      ctx.moveTo(
-        margin +
-          (roomWidth / 2 + obj.object.position.x) * scale +
-          objWidth / 2 +
-          10,
-        margin + (roomDepth / 2 + obj.object.position.z) * scale - objDepth / 2
-      );
-      ctx.lineTo(
-        margin +
-          (roomWidth / 2 + obj.object.position.x) * scale +
-          objWidth / 2 +
-          10,
-        margin + (roomDepth / 2 + obj.object.position.z) * scale + objDepth / 2
-      );
-      ctx.stroke();
-      ctx.fillText(
-        `D=${depth} cm`,
-        margin +
-          (roomWidth / 2 + obj.object.position.x) * scale +
-          objWidth / 2 +
-          15,
-        margin + (roomDepth / 2 + obj.object.position.z) * scale + objDepth / 4
-      );
+        // キューブを描画
+        ctx.fillStyle = obj.object.material.color.getStyle();
+        ctx.fillRect(
+          margin +
+            (roomWidth / 2 + obj.object.position.x) * scale -
+            objWidth / 2,
+          margin +
+            (roomDepth / 2 + obj.object.position.z) * scale -
+            objDepth / 2,
+          objWidth,
+          objDepth
+        );
+      }
+      // 円柱の場合
+      else if (geometry instanceof THREE.CylinderGeometry) {
+        const radius = geometry.parameters.radiusTop * scale;
+
+        // 円柱を描画
+        ctx.fillStyle = obj.object.material.color.getStyle();
+        ctx.beginPath();
+        ctx.arc(
+          margin + (roomWidth / 2 + obj.object.position.x) * scale,
+          margin + (roomDepth / 2 + obj.object.position.z) * scale,
+          radius,
+          0,
+          Math.PI * 2
+        );
+        ctx.fill();
+      }
+
+      // キューブの横幅表示
+      if (geometry instanceof THREE.BoxGeometry) {
+        ctx.beginPath();
+        ctx.moveTo(
+          margin +
+            (roomWidth / 2 + obj.object.position.x) * scale -
+            objWidth / 2,
+          margin +
+            (roomDepth / 2 + obj.object.position.z) * scale -
+            objDepth / 2 -
+            10
+        );
+        ctx.lineTo(
+          margin +
+            (roomWidth / 2 + obj.object.position.x) * scale +
+            objWidth / 2,
+          margin +
+            (roomDepth / 2 + obj.object.position.z) * scale -
+            objDepth / 2 -
+            10
+        );
+        ctx.stroke();
+        ctx.fillText(
+          `Obj ${index + 1} W=${geometry.parameters.width} cm`,
+          margin +
+            (roomWidth / 2 + obj.object.position.x) * scale -
+            objWidth / 4,
+          margin +
+            (roomDepth / 2 + obj.object.position.z) * scale -
+            objDepth / 2 -
+            15
+        );
+
+        // キューブの奥行き
+        ctx.beginPath();
+        ctx.moveTo(
+          margin +
+            (roomWidth / 2 + obj.object.position.x) * scale +
+            objWidth / 2 +
+            10,
+          margin +
+            (roomDepth / 2 + obj.object.position.z) * scale -
+            objDepth / 2
+        );
+        ctx.lineTo(
+          margin +
+            (roomWidth / 2 + obj.object.position.x) * scale +
+            objWidth / 2 +
+            10,
+          margin +
+            (roomDepth / 2 + obj.object.position.z) * scale +
+            objDepth / 2
+        );
+        ctx.stroke();
+        ctx.fillText(
+          `D=${geometry.parameters.depth} cm`,
+          margin +
+            (roomWidth / 2 + obj.object.position.x) * scale +
+            objWidth / 2 +
+            15,
+          margin +
+            (roomDepth / 2 + obj.object.position.z) * scale +
+            objDepth / 4
+        );
+      }
+      // 円柱の直径表示
+      else if (geometry instanceof THREE.CylinderGeometry) {
+        const radius = geometry.parameters.radiusTop * scale;
+
+        ctx.beginPath();
+        ctx.moveTo(
+          margin + (roomWidth / 2 + obj.object.position.x) * scale - radius,
+          margin + (roomDepth / 2 + obj.object.position.z) * scale
+        );
+        ctx.lineTo(
+          margin + (roomWidth / 2 + obj.object.position.x) * scale + radius,
+          margin + (roomDepth / 2 + obj.object.position.z) * scale
+        );
+        ctx.stroke();
+        // 円柱の直径ラベルを少し下にずらして表示
+        ctx.fillText(
+          `Obj ${index + 1} Diameter=${geometry.parameters.radiusTop * 2} cm`,
+          margin + (roomWidth / 2 + obj.object.position.x) * scale - radius / 2,
+          margin + (roomDepth / 2 + obj.object.position.z) * scale + 20 // ラベルを少し下に
+        );
+      }
     });
     return canvas;
   };
@@ -952,6 +1074,44 @@ const ThreeDApp = ({ handleBackToTop }) => {
         </p>
       );
     }
+  };
+
+  const handleDeleteLog = (index) => {
+    const updatedLogs = [...binedLogs];
+    updatedLogs.splice(index, 1); // 指定されたログを削除
+
+    // ローカルストレージの更新
+    localStorage.setItem("measurementLogs", JSON.stringify(updatedLogs));
+    setMeasurementLogs(updatedLogs); // UIも更新
+  };
+
+  const handleObjectCreation = (log) => {
+    // "cm"を取り除いて数値に変換する関数
+    const parseMeasurement = (value) => {
+      if (typeof value === "string") {
+        return Math.floor(parseFloat(value.replace("cm", "")));
+      }
+      return Math.floor(value); // 数値ならそのまま処理
+    };
+
+    // 直径があれば円柱型、それ以外はキューブ型に設定
+    if (log.diameter) {
+      setObjectType("cylinder");
+      setObjectSize({
+        diameter: parseMeasurement(log.diameter), // "cm"を取り除いて処理
+        height: parseMeasurement(log.height || 10), // 高さがなければデフォルト値を代入して処理
+      });
+    } else {
+      setObjectType("cube");
+      setObjectSize({
+        width: parseMeasurement(log.top_horizontal || log.max_width || 10), // 横幅を処理
+        height: parseMeasurement(log.side_height || log.height || 3), // 高さがなければ3を代入して処理
+        depth: parseMeasurement(log.top_vertical || log.max_height || 10), // 奥行きを処理
+      });
+    }
+
+    // オブジェクト生成ページへ遷移（画面切り替え）
+    setActivePanel("objectSize");
   };
 
   return (
@@ -1313,7 +1473,6 @@ const ThreeDApp = ({ handleBackToTop }) => {
                   {Object.entries(log).map(([key, value]) => {
                     // 表示したい項目だけを限定
                     const allowedKeys = [
-                      // "location", // 名前は allowedKeys から削除
                       "area_cm2", // 面積
                       "plane_edges", // 平面の各辺の長さ
                       "top_vertical", // 縦
@@ -1395,6 +1554,22 @@ const ThreeDApp = ({ handleBackToTop }) => {
 
                     return null;
                   })}
+
+                  {/* オブジェクト生成ボタン */}
+                  <button
+                    onClick={() => handleObjectCreation(log)}
+                    className="create-object-button"
+                  >
+                    オブジェクトを生成
+                  </button>
+
+                  {/* 削除ボタン */}
+                  <button
+                    onClick={() => handleDeleteLog(index)}
+                    className="delete-log-button"
+                  >
+                    削除
+                  </button>
                 </li>
               ))}
             </ul>
