@@ -215,6 +215,10 @@ const SizeMeasurement = () => {
           <>
             計測結果:（問題なければメモボタン推奨）
             <br />
+            最大横幅: {response.data.max_width}cm,
+            <br />
+            最大縦幅: {response.data.max_height}cm,
+            <br />
             面積: {response.data.measured_area}cm²,
             <br />
             上辺: {response.data.plane_edges.top_edge}cm,
@@ -570,7 +574,9 @@ const SizeMeasurement = () => {
                 )}
                 {log.mode === "plane" && log.result?.plane_edges && (
                   <>
-                    <p>測定された面積: {log.result.measured_area} cm²</p>
+                    <p>最大横幅: {log.result.max_width} cm</p>
+                    <p>最大縦幅: {log.result.max_height} cm</p>
+                    <p>面積: {log.result.measured_area} cm²</p>
                     <p>上辺: {log.result.plane_edges.top_edge} cm</p>
                     <p>右辺: {log.result.plane_edges.right_edge} cm</p>
                     <p>下辺: {log.result.plane_edges.bottom_edge} cm</p>

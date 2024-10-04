@@ -15,6 +15,7 @@ const Sidebar = ({
   saveCurrentViewAsImage,
   drawTopViewCanvasBW,
   drawTopViewCanvasColor,
+  handleBackToTop,
 }) => {
   const [showResetConfirmation, setShowResetConfirmation] = useState(false);
   const [isPopupOpen, setIsPopupOpen] = useState(false); // ポップアップ表示状態を管理
@@ -72,6 +73,7 @@ const Sidebar = ({
   return (
     <div className="sidebar">
       <h3 style={{ color: "white" }}>設定メニュー</h3>
+      <button onClick={handleBackToTop}>トップに戻る</button>
       <button onClick={() => openPopup("size")}>空間のサイズ・操作・色</button>
       <button onClick={() => openPopup("objectSize")}>
         オブジェクトのサイズと色

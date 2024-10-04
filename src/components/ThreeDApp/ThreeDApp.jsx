@@ -5,7 +5,7 @@ import "./ThreeDApp.css";
 import Sidebar from "./Sidebar.jsx";
 import Title from "../Common/Title.jsx";
 
-const ThreeDApp = () => {
+const ThreeDApp = ({ handleBackToTop }) => {
   const [measurementLogs, setMeasurementLogs] = useState(
     JSON.parse(localStorage.getItem("measurementLogs")) || []
   );
@@ -975,6 +975,7 @@ const ThreeDApp = () => {
           saveCurrentViewAsImage={saveCurrentViewAsImage}
           drawTopViewCanvasBW={drawTopViewCanvasBW}
           drawTopViewCanvasColor={drawTopViewCanvasColor}
+          handleBackToTop={handleBackToTop}
         />
       </div>
 
@@ -1306,96 +1307,92 @@ const ThreeDApp = () => {
             <ul>
               {binedLogs.map((log, index) => (
                 <li key={index}>
+                  {/* 'location' が存在する場合は表示 */}
+                  {log.location && <p>名前: {log.location}</p>}
+
                   {Object.entries(log).map(([key, value]) => {
-                    console.log("Key:", key, "Value:", value);
-                    if (value && key !== "id") {
+                    // 表示したい項目だけを限定
+                    const allowedKeys = [
+                      // "location", // 名前は allowedKeys から削除
+                      "area_cm2", // 面積
+                      "plane_edges", // 平面の各辺の長さ
+                      "top_vertical", // 縦
+                      "top_horizontal", // 横
+                      "side_height", // 高さ（3Dオブジェクトの場合）
+                      "diameter", // 直径
+                      "height", // 高さ
+                      "max_width", // 最大横幅
+                      "max_height", // 最大縦幅
+                    ];
+
+                    if (allowedKeys.includes(key) && value && key !== "id") {
                       let label = "";
                       let unit = "";
 
                       // キーに応じて表示ラベルと単位を設定
                       switch (key) {
-                        case "location":
-                          label = "名前";
-                          break;
-                        case "length":
-                          label = "長さ";
-                          unit = "cm";
-                          break;
-                        case "width":
-                          label = "幅";
-                          unit = "cm";
-                          break;
-                        case "height":
-                          label = "高さ";
-                          unit = "cm";
-                          break;
-                        case "depth":
-                          label = "奥行き";
-                          unit = "cm";
+                        case "area_cm2":
+                          label = "面積";
+                          unit = "cm²";
                           break;
                         case "top_vertical":
-                          label = "天面の縦サイズ";
+                          label = "縦";
                           unit = "cm";
                           break;
                         case "top_horizontal":
-                          label = "天面の横サイズ";
+                          label = "横";
                           unit = "cm";
                           break;
                         case "side_height":
-                          label = "側面の高さ";
+                          label = "高さ";
                           unit = "cm";
                           break;
                         case "diameter":
                           label = "直径";
                           unit = "cm";
                           break;
-                        case "topArea":
-                        case "top_area":
-                          label = "天面積";
-                          unit = "cm²";
+                        case "height":
+                          label = "高さ";
+                          unit = "cm";
                           break;
-                        case "sideArea":
-                        case "side_area":
-                          label = "側面積";
-                          unit = "cm²";
+                        case "max_width":
+                          label = "最大横幅";
+                          unit = "cm";
                           break;
-                        case "volume":
-                          label = "体積";
-                          unit = "cm³";
+                        case "max_height":
+                          label = "最大縦幅";
+                          unit = "cm";
                           break;
-                        // 他の新しい項目をここに追加
                         default:
                           label = key;
                           break;
                       }
 
-                      if (typeof value === "object" && value !== null) {
-                        // オブジェクトの内容を展開して表示
-                        return (
-                          <div key={key}>
-                            <p>{label}:</p>
-                            <ul>
-                              {Object.entries(value).map(
-                                ([subKey, subValue]) => (
-                                  <li key={subKey}>
-                                    {subKey}: {subValue}
-                                  </li>
-                                )
-                              )}
-                            </ul>
-                          </div>
-                        );
-                      } else {
-                        // valueがオブジェクトでない場合
-                        return (
-                          <p key={key}>
-                            {label}: {value}
-                            {unit && ` ${unit}`}
-                          </p>
-                        );
-                      }
-                      return renderValue(key, value, label, unit);
+                      // 単純な値を表示
+                      return (
+                        <p key={key}>
+                          {label}: {value}
+                          {unit && ` ${unit}`}
+                        </p>
+                      );
                     }
+
+                    // plane_edgesの四辺の表示処理
+                    if (
+                      key === "plane_edges" &&
+                      typeof value === "object" &&
+                      value !== null
+                    ) {
+                      return (
+                        <div key={key}>
+                          <p>上辺: {value.top_edge} cm</p>
+                          <p>右辺: {value.right_edge} cm</p>
+                          <p>下辺: {value.bottom_edge} cm</p>
+                          <p>左辺: {value.left_edge} cm</p>
+                        </div>
+                      );
+                    }
+
                     return null;
                   })}
                 </li>

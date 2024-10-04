@@ -70,7 +70,7 @@ function App() {
         )}
 
         {/* 新しい3Dアプリを表示 */}
-        {mode === "3dapp" && <ThreeDApp />}
+        {mode === "3dapp" && <ThreeDApp handleBackToTop={handleBackToTop} />}
 
         {/* サイズ測定アプリのモード選択 */}
         {mode === "measurement" && !subMode && (

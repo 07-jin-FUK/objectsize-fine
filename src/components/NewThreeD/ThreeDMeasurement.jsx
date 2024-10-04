@@ -208,22 +208,6 @@ const ThreeDMeasurement = () => {
             側面面積: {side_area},<br />
             体積: {volume},<br />
             <br />
-            天面の各辺の長さ:
-            <br />
-            ・上辺: {top_edges?.top_edge} cm,
-            <br />
-            ・右辺: {top_edges?.right_edge} cm,
-            <br />
-            ・下辺: {top_edges?.bottom_edge} cm,
-            <br />
-            ・左辺: {top_edges?.left_edge} cm,
-            <br />
-            <br />
-            側面の各辺の長さ:
-            <br />
-            ・右辺: {side_right_edge},<br />
-            ・下辺: {side_bottom_edge},<br />
-            ・左辺: {side_left_edge},<br />
           </>
         );
       } else {
@@ -528,22 +512,6 @@ const ThreeDMeasurement = () => {
                   側面面積 {log.side_area} , <br />
                   体積 {log.volume},<br />
                   <br />
-                  天面の各辺の長さ:
-                  <br />
-                  ・上辺: {log.top_edges?.top_edge} cm,
-                  <br />
-                  ・右辺: {log.top_edges?.right_edge} cm,
-                  <br />
-                  ・下辺: {log.top_edges?.bottom_edge} cm,
-                  <br />
-                  ・左辺: {log.top_edges?.left_edge} cm,
-                  <br />
-                  <br />
-                  側面の各辺の長さ:
-                  <br />
-                  ・右辺: {log.side_right_edge},<br />
-                  ・下辺: {log.side_bottom_edge},<br />
-                  ・左辺: {log.side_left_edge},<br />
                   <button onClick={() => deleteMeasurementLog(log.id)}>
                     削除
                   </button>
