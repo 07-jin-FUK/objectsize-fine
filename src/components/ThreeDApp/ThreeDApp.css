@@ -311,6 +311,7 @@ ul.color-list li {
     width: 100%;
     height: 100%;
     cursor: pointer;
+    z-index: 100;
 }
 
 /* 操作パネル */

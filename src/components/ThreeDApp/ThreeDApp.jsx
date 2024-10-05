@@ -1583,17 +1583,16 @@ const ThreeDApp = ({ handleBackToTop }) => {
               {objectLogs.map((log, index) => (
                 <li key={index} className="color-picker-wrapper">
                   {index + 1}.
+                  <input
+                    type="color"
+                    value={log.color}
+                    className="custom-color-picker"
+                    onChange={(e) => handleColorChange(e, index)} // 色が変わったときに実行
+                  />
                   <span
                     className="custom-color-picker-label"
                     style={{ backgroundColor: log.color }}
-                  >
-                    <input
-                      type="color"
-                      value={log.color}
-                      className="custom-color-picker"
-                      onChange={(e) => handleColorChange(e, index)}
-                    />
-                  </span>
+                  ></span>
                   (幅: {log.width}cm, 高さ: {log.height}cm, 奥行: {log.depth}cm)
                   {log.isWireframe ? " [枠線のみ]" : ""}
                   <button onClick={() => removeObject(index)}>消去</button>
