@@ -405,7 +405,7 @@ const ThreeDApp = ({ handleBackToTop }) => {
         spacePosition.z
       );
       scene.add(wireframe);
-      objectsRef.current.push({ color: color, object: wireframe });
+      objectsRef.current.push({ color: color, object: wireframe, objectType });
     } else {
       // ワイヤーフレームでない場合
       if (objectType === "cube") {
@@ -434,19 +434,21 @@ const ThreeDApp = ({ handleBackToTop }) => {
         spacePosition.z
       );
       scene.add(mesh);
-      objectsRef.current.push({ color: color, object: mesh });
+      objectsRef.current.push({ color: color, object: mesh, objectType });
     }
 
     // ログに新しいオブジェクトの情報を追加
     setObjectLogs((prevLogs) => [
       ...prevLogs,
       {
-        color: color,
+        color: objectColor,
         colorName: selectedColorName,
-        width: objectSize.width, // キューブの場合は幅、円柱の場合は直径
+        width: objectType === "cube" ? objectSize.width : undefined, // キューブの場合のみ幅を保存
         height: objectSize.height,
-        depth: objectType === "cube" ? objectSize.depth : objectSize.diameter, // キューブか円柱かで切り替え
+        depth: objectType === "cube" ? objectSize.depth : undefined, // キューブの場合のみ奥行を保存
+        diameter: objectType === "cylinder" ? objectSize.diameter : undefined, // 円柱の場合のみ直径を保存
         isWireframe: isWireframe,
+        objectType,
       },
     ]);
 
@@ -491,6 +493,7 @@ const ThreeDApp = ({ handleBackToTop }) => {
       ...prev,
       [name]: parseFloat(value),
     }));
+    console.log("Updated Object Size: ", objectSize); // ここでログを確認
     rendererRef.current.render(sceneRef.current, cameraRef.current);
   };
 
@@ -1094,23 +1097,45 @@ const ThreeDApp = ({ handleBackToTop }) => {
       return Math.floor(value); // 数値ならそのまま処理
     };
 
-    // 直径があれば円柱型、それ以外はキューブ型に設定
-    if (log.diameter) {
+    // 平面データの場合
+    if (log.mode === "plane") {
+      setObjectType("cube"); // 平面データでもキューブ型で扱う
+      setObjectSize({
+        width: parseMeasurement(log.result.max_width),
+        height: 3, // 高さはデフォルトの3
+        depth: parseMeasurement(log.result.max_height),
+      });
+    }
+    // 円柱データの場合
+    else if (log.diameter && log.height) {
+      console.log("Cylinder data detected:", log); // 円柱データのデバッグ
       setObjectType("cylinder");
       setObjectSize({
-        diameter: parseMeasurement(log.diameter), // "cm"を取り除いて処理
-        height: parseMeasurement(log.height || 10), // 高さがなければデフォルト値を代入して処理
+        diameter: parseMeasurement(log.diameter), // 直径を取得
+        height: parseMeasurement(log.height), // 高さを取得
       });
-    } else {
+      console.log("Set object size for cylinder:", {
+        diameter: parseMeasurement(log.diameter),
+        height: parseMeasurement(log.height),
+      });
+    }
+    // キューブデータの場合
+    else if (log.top_horizontal && log.top_vertical && log.side_height) {
+      console.log("Cube data detected:", log); // キューブデータのデバッグ
       setObjectType("cube");
       setObjectSize({
-        width: parseMeasurement(log.top_horizontal || log.max_width || 10), // 横幅を処理
-        height: parseMeasurement(log.side_height || log.height || 3), // 高さがなければ3を代入して処理
-        depth: parseMeasurement(log.top_vertical || log.max_height || 10), // 奥行きを処理
+        width: parseMeasurement(log.top_horizontal), // 横幅
+        height: parseMeasurement(log.side_height), // 高さ
+        depth: parseMeasurement(log.top_vertical), // 奥行き
+      });
+      console.log("Set object size for cube:", {
+        width: parseMeasurement(log.top_horizontal),
+        height: parseMeasurement(log.side_height),
+        depth: parseMeasurement(log.top_vertical),
       });
     }
 
-    // オブジェクト生成ページへ遷移（画面切り替え）
+    // ここでオブジェクト生成画面を開く
     setActivePanel("objectSize");
   };
 
@@ -1166,7 +1191,8 @@ const ThreeDApp = ({ handleBackToTop }) => {
                 <input
                   type="number"
                   name="width"
-                  value={(dimensions.width / 100).toFixed(2)}
+                  step="0.1"
+                  value={dimensions.width / 100}
                   onChange={handleInputChange}
                 />
               </label>
@@ -1175,7 +1201,8 @@ const ThreeDApp = ({ handleBackToTop }) => {
                 <input
                   type="number"
                   name="depth"
-                  value={(dimensions.depth / 100).toFixed(2)}
+                  step="0.1"
+                  value={dimensions.width / 100}
                   onChange={handleInputChange}
                 />
               </label>
@@ -1184,7 +1211,8 @@ const ThreeDApp = ({ handleBackToTop }) => {
                 <input
                   type="number"
                   name="height"
-                  value={(dimensions.height / 100).toFixed(2)}
+                  step="0.1"
+                  value={dimensions.width / 100}
                   onChange={handleInputChange}
                 />
               </label>
@@ -1424,7 +1452,6 @@ const ThreeDApp = ({ handleBackToTop }) => {
             </div>
           </div>
         )}
-
         {activePanel === "objectControl" && (
           <div className="section controls">
             <h3>オブジェクトの操作</h3>
@@ -1461,117 +1488,103 @@ const ThreeDApp = ({ handleBackToTop }) => {
             <button onClick={resetCameraPosition}>オブジェクトを再描画</button>
           </div>
         )}
+
         {activePanel === "importLog" && (
           <div className="section">
             <h3>サイズ測定の結果をインポートします。</h3>
             <ul>
-              {binedLogs.map((log, index) => (
-                <li key={index}>
-                  {/* 'location' が存在する場合は表示 */}
-                  {log.location && <p>名前: {log.location}</p>}
+              {binedLogs.map((log, index) => {
+                // データタイプの判定
+                const isCylinder = log.diameter && log.height;
+                const isCube =
+                  log.top_horizontal &&
+                  log.top_vertical &&
+                  log.side_height &&
+                  log.top_edges;
+                const isPlane = log.result?.max_width && log.result?.max_height;
 
-                  {Object.entries(log).map(([key, value]) => {
-                    // 表示したい項目だけを限定
-                    const allowedKeys = [
-                      "area_cm2", // 面積
-                      "plane_edges", // 平面の各辺の長さ
-                      "top_vertical", // 縦
-                      "top_horizontal", // 横
-                      "side_height", // 高さ（3Dオブジェクトの場合）
-                      "diameter", // 直径
-                      "height", // 高さ
-                      "max_width", // 最大横幅
-                      "max_height", // 最大縦幅
-                    ];
+                // 表示する必要がないデータはスキップ
+                if (!isCube && !isCylinder && !isPlane) return null;
 
-                    if (allowedKeys.includes(key) && value && key !== "id") {
-                      let label = "";
-                      let unit = "";
+                const parseMeasurement = (value) => {
+                  return typeof value === "string"
+                    ? value.replace("cm", "")
+                    : value;
+                };
 
-                      // キーに応じて表示ラベルと単位を設定
-                      switch (key) {
-                        case "area_cm2":
-                          label = "面積";
-                          unit = "cm²";
-                          break;
-                        case "top_vertical":
-                          label = "縦";
-                          unit = "cm";
-                          break;
-                        case "top_horizontal":
-                          label = "横";
-                          unit = "cm";
-                          break;
-                        case "side_height":
-                          label = "高さ";
-                          unit = "cm";
-                          break;
-                        case "diameter":
-                          label = "直径";
-                          unit = "cm";
-                          break;
-                        case "height":
-                          label = "高さ";
-                          unit = "cm";
-                          break;
-                        case "max_width":
-                          label = "最大横幅";
-                          unit = "cm";
-                          break;
-                        case "max_height":
-                          label = "最大縦幅";
-                          unit = "cm";
-                          break;
-                        default:
-                          label = key;
-                          break;
-                      }
+                return (
+                  <li key={index}>
+                    {/* 'location' の名前のみを表示 */}
+                    {log.location && <p>名前: {log.location}</p>}
 
-                      // 単純な値を表示
-                      return (
-                        <p key={key}>
-                          {label}: {value}
-                          {unit && ` ${unit}`}
+                    {/* 平面データの場合 */}
+                    {isPlane && (
+                      <>
+                        <p>横幅: {parseMeasurement(log.result.max_width)} cm</p>
+                        <p>
+                          奥行き: {parseMeasurement(log.result.max_height)} cm
                         </p>
-                      );
-                    }
+                        <p>高さ: 3 cm（デフォルト値）</p>
+                        <button
+                          onClick={() => handleObjectCreation(log)}
+                          className="create-object-button"
+                        >
+                          平面オブジェクトを生成
+                        </button>
+                      </>
+                    )}
 
-                    // plane_edgesの四辺の表示処理
-                    if (
-                      key === "plane_edges" &&
-                      typeof value === "object" &&
-                      value !== null
-                    ) {
-                      return (
-                        <div key={key}>
-                          <p>上辺: {value.top_edge} cm</p>
-                          <p>右辺: {value.right_edge} cm</p>
-                          <p>下辺: {value.bottom_edge} cm</p>
-                          <p>左辺: {value.left_edge} cm</p>
-                        </div>
-                      );
-                    }
+                    {/* キューブ型の場合 */}
+                    {isCube && (
+                      <>
+                        <p>横幅: {parseMeasurement(log.top_horizontal)} cm</p>
+                        <p>奥行き: {parseMeasurement(log.top_vertical)} cm</p>
+                        <p>高さ: {parseMeasurement(log.side_height)} cm</p>
+                        <p>
+                          上辺: {parseMeasurement(log.top_edges.top_edge)} cm
+                        </p>
+                        <p>
+                          右辺: {parseMeasurement(log.top_edges.right_edge)} cm
+                        </p>
+                        <p>
+                          下辺: {parseMeasurement(log.top_edges.bottom_edge)} cm
+                        </p>
+                        <p>
+                          左辺: {parseMeasurement(log.top_edges.left_edge)} cm
+                        </p>
+                        <button
+                          onClick={() => handleObjectCreation(log)}
+                          className="create-object-button"
+                        >
+                          キューブオブジェクトを生成
+                        </button>
+                      </>
+                    )}
 
-                    return null;
-                  })}
+                    {/* 円柱型の場合 */}
+                    {isCylinder && (
+                      <>
+                        <p>直径: {parseMeasurement(log.diameter)} cm</p>
+                        <p>高さ: {parseMeasurement(log.height)} cm</p>
+                        <button
+                          onClick={() => handleObjectCreation(log)}
+                          className="create-object-button"
+                        >
+                          円柱オブジェクトを生成
+                        </button>
+                      </>
+                    )}
 
-                  {/* オブジェクト生成ボタン */}
-                  <button
-                    onClick={() => handleObjectCreation(log)}
-                    className="create-object-button"
-                  >
-                    オブジェクトを生成
-                  </button>
-
-                  {/* 削除ボタン */}
-                  <button
-                    onClick={() => handleDeleteLog(index)}
-                    className="delete-log-button"
-                  >
-                    削除
-                  </button>
-                </li>
-              ))}
+                    {/* 削除ボタン */}
+                    <button
+                      onClick={() => handleDeleteLog(index)}
+                      className="delete-log-button"
+                    >
+                      削除
+                    </button>
+                  </li>
+                );
+              })}
             </ul>
           </div>
         )}
@@ -1580,24 +1593,40 @@ const ThreeDApp = ({ handleBackToTop }) => {
           <div className="section">
             <h3>オブジェクトログ</h3>
             <ul>
-              {objectLogs.map((log, index) => (
-                <li key={index} className="color-picker-wrapper">
-                  {index + 1}.
-                  <input
-                    type="color"
-                    value={log.color}
-                    className="custom-color-picker"
-                    onChange={(e) => handleColorChange(e, index)} // 色が変わったときに実行
-                  />
-                  <span
-                    className="custom-color-picker-label"
-                    style={{ backgroundColor: log.color }}
-                  ></span>
-                  (幅: {log.width}cm, 高さ: {log.height}cm, 奥行: {log.depth}cm)
-                  {log.isWireframe ? " [枠線のみ]" : ""}
-                  <button onClick={() => removeObject(index)}>消去</button>
-                </li>
-              ))}
+              {objectLogs.map((log, index) => {
+                // ここで console.log を使って objectType とログの内容を出力する
+                console.log("Object Type:", log.objectType); // オブジェクトの種類を確認
+                console.log("Object Logs:", log); // 各ログの詳細を確認
+
+                return (
+                  <li key={index} className="color-picker-wrapper">
+                    {index + 1}.
+                    <input
+                      type="color"
+                      value={log.color}
+                      className="custom-color-picker"
+                      onChange={(e) => handleColorChange(e, index)} // 色が変わったときに実行
+                    />
+                    <span
+                      className="custom-color-picker-label"
+                      style={{ backgroundColor: log.color }}
+                    ></span>
+                    {/* objectType に基づいて表示する情報を分ける */}
+                    {log.objectType === "cube" ? (
+                      <p>
+                        (幅: {log.width}cm, 高さ: {log.height}cm, 奥行:{" "}
+                        {log.depth}cm)
+                      </p>
+                    ) : (
+                      <p>
+                        (直径: {log.diameter}cm, 高さ: {log.height}cm)
+                      </p>
+                    )}
+                    {log.isWireframe ? " [枠線のみ]" : ""}
+                    <button onClick={() => removeObject(index)}>消去</button>
+                  </li>
+                );
+              })}
             </ul>
           </div>
         )}
