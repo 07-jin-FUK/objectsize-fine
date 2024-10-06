@@ -5,12 +5,27 @@ import ThreeDMeasurement from "./components/NewThreeD/ThreeDMeasurement";
 import CylinderMeasurement from "./components/CylinderMeasurement/CylinderMeasurement";
 import Instructions from "./components/Instructions/Instructions";
 import "./App.css";
-import ThreeDApp from "./components/ThreeDApp/ThreeDApp";
+
 import { DataStorageProvider } from "./components/DataStorage/DataStorage";
+import Login from "./components/Login/Login";
+import ThreeDApp from "./components/ThreeDApp/ThreeDapp";
+import Register from "./components/Login/Register";
+import Modal from "./components/Login/Modal";
 
 function App() {
+  const [isLoginOpen, setLoginOpen] = useState(false);
+  const [isRegisterOpen, setRegisterOpen] = useState(false);
+
+  const openLoginModal = () => setLoginOpen(true);
+  const closeLoginModal = () => setLoginOpen(false);
+
+  const openRegisterModal = () => setRegisterOpen(true);
+  const closeRegisterModal = () => setRegisterOpen(false);
   const [mode, setMode] = useState(null); // メインモード選択用
   const [subMode, setSubMode] = useState(null); // サブモード選択用
+  const [loggedInUser, setLoggedInUser] = useState(null);
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false); // ログアウトモーダルの状態
+  const [logoutMessage, setLogoutMessage] = useState(""); // ログアウトメッセージ
 
   const handleBackToTop = () => {
     setMode(null); // メインモード選択画面に戻る
@@ -26,9 +41,73 @@ function App() {
     setSubMode(selectedSubMode);
   };
 
+  const handleLogout = () => {
+    setLoggedInUser(null); // ログインユーザーをリセット
+    localStorage.removeItem("token"); // トークンを削除
+    // ログアウト完了モーダルを表示
+    setLogoutMessage("ログアウト完了しました。お疲れさまでした。");
+    setIsLogoutModalOpen(true);
+
+    // 2秒後にモーダルを閉じる
+    setTimeout(() => {
+      setIsLogoutModalOpen(false);
+      setLogoutMessage(""); // メッセージリセット
+    }, 2000);
+  };
+
   return (
     <DataStorageProvider>
       <div className="App">
+        {/* ログイン状態の表示 */}
+        <div className="login-status">
+          {loggedInUser ? (
+            <p>
+              こんにちわ、
+              <span style={{ fontWeight: "bold", fontSize: "18px" }}>
+                {loggedInUser}
+              </span>
+              さん
+            </p>
+          ) : (
+            <p>こんにちわ、ゲストさん</p>
+          )}
+        </div>
+        {loggedInUser ? (
+          <button onClick={handleLogout} className="logout-button">
+            ログアウト
+          </button>
+        ) : (
+          <div className="auth-buttons">
+            <button onClick={openLoginModal} className="login-button">
+              ログイン
+            </button>
+            <button onClick={openRegisterModal} className="register-button">
+              新規会員登録
+            </button>
+          </div>
+        )}
+
+        <Modal isOpen={isLoginOpen} onClose={closeLoginModal}>
+          <Login
+            setLoggedInUser={setLoggedInUser}
+            closeLoginModal={closeLoginModal}
+          />
+        </Modal>
+        {/* 新規登録モーダル */}
+        <Modal isOpen={isRegisterOpen} onClose={closeRegisterModal}>
+          <Register
+            closeRegisterModal={closeRegisterModal}
+            openLoginModal={openLoginModal}
+          />
+        </Modal>
+
+        {/* ログアウト完了モーダル */}
+        <Modal
+          isOpen={isLogoutModalOpen}
+          onClose={() => setIsLogoutModalOpen(false)}
+        >
+          <p>{logoutMessage}</p>
+        </Modal>
         {/* modeが "3dapp" ではない場合に Title を表示 */}
         {mode !== "3dapp" && <Title />}
 

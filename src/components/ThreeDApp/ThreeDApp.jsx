@@ -3,7 +3,6 @@ import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 import "./ThreeDApp.css";
 import Sidebar from "./Sidebar.jsx";
-import Title from "../Common/Title.jsx";
 
 const ThreeDApp = ({ handleBackToTop }) => {
   const [measurementLogs, setMeasurementLogs] = useState(
