@@ -58,32 +58,38 @@ function App() {
   return (
     <DataStorageProvider>
       <div className="App">
-        {/* ログイン状態の表示 */}
-        <div className="login-status">
-          {loggedInUser ? (
-            <p>
-              こんにちわ、
-              <span style={{ fontWeight: "bold", fontSize: "18px" }}>
-                {loggedInUser}
-              </span>
-              さん
-            </p>
-          ) : (
-            <p>こんにちわ、ゲストさん</p>
-          )}
-        </div>
-        {loggedInUser ? (
-          <button onClick={handleLogout} className="logout-button">
-            ログアウト
-          </button>
-        ) : (
-          <div className="auth-buttons">
-            <button onClick={openLoginModal} className="login-button">
-              ログイン
-            </button>
-            <button onClick={openRegisterModal} className="register-button">
-              新規会員登録
-            </button>
+        {!mode && (
+          <div className="login-status">
+            {loggedInUser ? (
+              <p>
+                こんにちわ、
+                <span style={{ fontWeight: "bold", fontSize: "18px" }}>
+                  {loggedInUser}
+                </span>
+                さん
+              </p>
+            ) : (
+              <p>こんにちわ、ゲストさん</p>
+            )}
+          </div>
+        )}
+
+        {mode !== "3dapp" && (
+          <div>
+            {loggedInUser ? (
+              <button onClick={handleLogout} className="logout-button">
+                ログアウト
+              </button>
+            ) : (
+              <div className="auth-buttons">
+                <button onClick={openLoginModal} className="login-button">
+                  ログイン
+                </button>
+                <button onClick={openRegisterModal} className="register-button">
+                  新規会員登録
+                </button>
+              </div>
+            )}
           </div>
         )}
 
@@ -110,15 +116,6 @@ function App() {
         </Modal>
         {/* modeが "3dapp" ではない場合に Title を表示 */}
         {mode !== "3dapp" && <Title />}
-
-        {/* トップ画面に戻るボタン */}
-        {mode && (
-          <div className="button-container">
-            <button onClick={handleBackToTop} className="top-button">
-              トップ画面に戻る
-            </button>
-          </div>
-        )}
 
         {/* メインモード選択画面（セクション形式） */}
         {!mode && (
@@ -154,6 +151,11 @@ function App() {
         {/* サイズ測定アプリのモード選択 */}
         {mode === "measurement" && !subMode && (
           <div className="mode-selection-container">
+            <div className="button-container">
+              <button onClick={handleBackToTop} className="top-button">
+                トップ画面に戻る
+              </button>
+            </div>
             <div
               className="mode-selection-section"
               onClick={() => handleSubModeSelection("flat")}
@@ -223,6 +225,11 @@ function App() {
         {/* 平面モード */}
         {subMode === "flat" && (
           <div>
+            <div className="button-container">
+              <button onClick={handleBackToTop} className="top-button">
+                トップ画面に戻る
+              </button>
+            </div>
             <h2>平面サイズ測定モード</h2>
             <Instructions mode="flat" />
             <SizeMeasurement />
@@ -232,6 +239,11 @@ function App() {
         {/* 3Dモード（キューブ） */}
         {subMode === "3D" && (
           <div>
+            <div className="button-container">
+              <button onClick={handleBackToTop} className="top-button">
+                トップ画面に戻る
+              </button>
+            </div>
             <h2>3Dサイズ測定モード（キューブ）</h2>
             <Instructions mode="3D" />
             <ThreeDMeasurement />
@@ -241,6 +253,11 @@ function App() {
         {/* 円柱モード */}
         {subMode === "cylinder" && (
           <div>
+            <div className="button-container">
+              <button onClick={handleBackToTop} className="top-button">
+                トップ画面に戻る
+              </button>
+            </div>
             <h2>円柱サイズ測定モード</h2>
             <Instructions mode="cylinder" />
             <CylinderMeasurement />
