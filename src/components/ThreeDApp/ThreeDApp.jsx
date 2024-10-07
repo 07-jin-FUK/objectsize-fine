@@ -4,7 +4,12 @@ import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 import "./ThreeDApp.css";
 import Sidebar from "./Sidebar.jsx";
 
-const ThreeDApp = ({ handleBackToTop }) => {
+const ThreeDApp = ({
+  handleBackToTop,
+  loggedInUser,
+  handleLogout,
+  openLoginModal,
+}) => {
   const [measurementLogs, setMeasurementLogs] = useState(
     JSON.parse(localStorage.getItem("measurementLogs")) || []
   );
@@ -77,6 +82,69 @@ const ThreeDApp = ({ handleBackToTop }) => {
     y: 0,
     z: 0,
   }); // 空間の移動量を保存
+
+  // 空間ID（仮に固定）
+  const spaceId = 1;
+
+  const handleSaveFile = async () => {
+    const data = {
+      dimensions, // 空間のサイズ
+      backgroundColor, // 背景色
+      floorColor, // 床の色
+      objectLogs, // オブジェクト情報
+      isSingleSided, // 側面設定
+    };
+
+    try {
+      await axios.post(`/spaces/${spaceId}/save`, data);
+      alert("空間とオブジェクトが保存されました");
+    } catch (error) {
+      console.error("保存中にエラーが発生しました", error);
+      alert("保存に失敗しました");
+    }
+  };
+
+  // 空間とオブジェクトを呼び出す関数
+  const handleLoadFile = async () => {
+    try {
+      const response = await axios.get(`/spaces/${spaceId}`);
+      const data = response.data;
+
+      // 保存されたデータを復元
+      setDimensions(data.space.dimensions);
+      setBackgroundColor(data.space.background_color);
+      setFloorColor(data.space.floor_color);
+      setIsSingleSided(data.space.is_single_sided);
+      setObjectLogs(data.objects.map((obj) => JSON.parse(obj.object_data)));
+
+      // オブジェクトの描画をリセットして復元
+      objectsRef.current = data.objects.map((obj) =>
+        createObjectFromLog(JSON.parse(obj.object_data))
+      );
+      alert("空間とオブジェクトが読み込まれました");
+    } catch (error) {
+      console.error("読み込み中にエラーが発生しました", error);
+      alert("読み込みに失敗しました");
+    }
+  };
+
+  const createObjectFromLog = (log) => {
+    // ログからオブジェクトを再作成するロジック
+    let geometry, material;
+    const color = new THREE.Color(log.color);
+
+    if (log.objectType === "cube") {
+      geometry = new THREE.BoxGeometry(log.width, log.height, log.depth);
+    } else if (log.objectType === "cylinder") {
+      const radius = log.diameter / 2;
+      geometry = new THREE.CylinderGeometry(radius, radius, log.height, 32);
+    }
+
+    material = new THREE.MeshBasicMaterial({ color });
+    const mesh = new THREE.Mesh(geometry, material);
+    mesh.position.set(log.position.x, log.position.y, log.position.z);
+    return mesh;
+  };
 
   const resetToInitialPositions = () => {
     // 空間の位置を初期位置に戻す
@@ -1160,6 +1228,11 @@ const ThreeDApp = ({ handleBackToTop }) => {
           drawTopViewCanvasBW={drawTopViewCanvasBW}
           drawTopViewCanvasColor={drawTopViewCanvasColor}
           handleBackToTop={handleBackToTop}
+          loggedInUser={loggedInUser}
+          handleLogout={handleLogout}
+          openLoginModal={openLoginModal}
+          handleSaveFile={handleSaveFile}
+          handleLoadFile={handleLoadFile}
         />
       </div>
 
@@ -1314,7 +1387,7 @@ const ThreeDApp = ({ handleBackToTop }) => {
 
         {activePanel === "objectSize" && (
           <div className="section">
-            <h3>オブジェクトのサイズと色</h3>
+            <h3>オブジェクト生成（サイズ・色）</h3>
             <div>
               {/* オブジェクトの種類を選択するドロップダウンメニュー */}
               <label>

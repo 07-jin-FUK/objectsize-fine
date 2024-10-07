@@ -16,6 +16,11 @@ const Sidebar = ({
   drawTopViewCanvasBW,
   drawTopViewCanvasColor,
   handleBackToTop,
+  loggedInUser,
+  handleLogout,
+  openLoginModal,
+  handleSaveFile,
+  handleLoadFile,
 }) => {
   const [showResetConfirmation, setShowResetConfirmation] = useState(false);
   const [isPopupOpen, setIsPopupOpen] = useState(false); // ポップアップ表示状態を管理
@@ -74,12 +79,17 @@ const Sidebar = ({
     <div className="sidebar">
       <h3 style={{ color: "white" }}>設定メニュー</h3>
       <button onClick={handleBackToTop}>トップに戻る</button>
+      {loggedInUser ? (
+        <button onClick={handleLogout}>ログアウト</button>
+      ) : (
+        <button onClick={openLoginModal}>ログイン</button>
+      )}
+      <button onClick={handleSaveFile}>ファイルを保存</button>
+      <button onClick={handleLoadFile}>ファイルを読み込む</button>
       <button onClick={() => openPopup("size")}>空間のサイズ・操作・色</button>
-      <button onClick={() => openPopup("objectSize")}>
-        オブジェクトのサイズと色
-      </button>
+      <button onClick={() => openPopup("objectSize")}>オブジェクト生成</button>
       <button onClick={() => openPopup("objectControl")}>
-        オブジェクトの操作
+        オブジェクト操作
       </button>
       <button onClick={() => openPopup("importLog")}>
         サイズ測定からインポート
@@ -105,27 +115,6 @@ const Sidebar = ({
         オブジェクトを再描画
       </button>
       <div className="fixbutton">
-        <div className="modechange">
-          <button
-            onClick={() => isSpaceLocked && toggleSpaceLock()}
-            style={{
-              backgroundColor: isSpaceLocked ? "gray" : "green",
-              color: "white",
-            }}
-          >
-            <span style={{ fontWeight: "bold" }}>ドラッグ空間回転モード</span>
-          </button>
-          <button
-            onClick={() => !isSpaceLocked && toggleSpaceLock()}
-            style={{
-              backgroundColor: !isSpaceLocked ? "gray" : "red",
-              color: "white",
-              marginRight: "5px",
-            }}
-          >
-            <span style={{ fontWeight: "bold" }}>ドラッグ位置変更モード</span>
-          </button>
-        </div>
         <button
           className="changeside"
           onClick={() => setIsSingleSided((prev) => !prev)}
@@ -145,23 +134,6 @@ const Sidebar = ({
         >
           オブジェクトを再描画
         </button>
-        <p className="mode-description">
-          {isSpaceLocked ? (
-            <>
-              現在は空間位置変更モードです。画面ドラッグで空間が移動します。
-              <br />
-              空間の移動で処理の関係上オブジェクトが消失することがありますが、オブジェクトを再描画ボタンにより元に戻ります。
-              <br />
-              このモード中のオブジェクト配置は不安定のため、移動後はモードを空間回転に戻してください。
-            </>
-          ) : (
-            <>
-              現在は空間回転モードです。画面ドラッグで空間が回転します。（基本モード）
-              <br />
-              空間の移動で処理の関係上オブジェクトが消失することがありますが、オブジェクトを再描画ボタンにより元に戻ります。
-            </>
-          )}
-        </p>
       </div>
       {/* オールリセットボタン（強調したスタイル） */}
       <button

@@ -72,8 +72,8 @@ html {
 }
 
 .sidebar button {
-    /* width: 100%; */
-    padding: 15px;
+    width: 100%;
+    padding: 10px;
   
     background-color: #444;
     color: white;
@@ -625,7 +625,7 @@ button.yes-button:hover{
 .fixbutton {
     max-width: 100%;
     position: fixed;
-    width: 80%;
+    width: 25%;
     height: 5%;
     top: 1%;
     left: 300px;

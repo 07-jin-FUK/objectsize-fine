@@ -146,7 +146,14 @@ function App() {
         )}
 
         {/* 新しい3Dアプリを表示 */}
-        {mode === "3dapp" && <ThreeDApp handleBackToTop={handleBackToTop} />}
+        {mode === "3dapp" && (
+          <ThreeDApp
+            handleBackToTop={handleBackToTop}
+            loggedInUser={loggedInUser}
+            handleLogout={handleLogout}
+            openLoginModal={openLoginModal}
+          />
+        )}
 
         {/* サイズ測定アプリのモード選択 */}
         {mode === "measurement" && !subMode && (
