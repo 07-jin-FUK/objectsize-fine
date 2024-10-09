@@ -2,7 +2,6 @@ import React, { useState } from "react";
 import axios from "axios";
 
 const Login = ({ setLoggedInUser, closeLoginModal }) => {
-  // closeLoginModal を受け取る
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -15,25 +14,23 @@ const Login = ({ setLoggedInUser, closeLoginModal }) => {
         email,
         password,
       });
+
       if (response.status === 200) {
-        // ステータスコードが 200 の場合のみ成功
-        const { token, name } = response.data;
-        setLoggedInUser(name);
+        const { token, name, id } = response.data; // id を取得
+        setLoggedInUser({ name, id }); // id と name をセット
         localStorage.setItem("token", token);
         setSuccessMessage("ログイン完了！いつもありがとうございます！");
-        setError(""); // エラーメッセージをリセット
-
-        // 2秒後に成功メッセージを非表示にする
+        setError("");
         setTimeout(() => {
           setSuccessMessage("");
-          closeLoginModal(); // モーダルを閉じる
+          closeLoginModal();
         }, 2000);
       } else {
         throw new Error("ログインに失敗しました。");
       }
     } catch (error) {
       setError("ログインに失敗しました。");
-      setSuccessMessage(""); // 成功メッセージをリセット
+      setSuccessMessage("");
     }
   };
 

@@ -21,6 +21,8 @@ const Sidebar = ({
   openLoginModal,
   handleSaveFile,
   handleLoadFile,
+  handleSaveObjects,
+  handleLoadObjects,
 }) => {
   const [showResetConfirmation, setShowResetConfirmation] = useState(false);
   const [isPopupOpen, setIsPopupOpen] = useState(false); // ポップアップ表示状態を管理
@@ -74,6 +76,27 @@ const Sidebar = ({
   const handleCancelReset = () => {
     setShowResetConfirmation(false); // ポップアップを閉じる
   };
+  const handleSaveAll = async () => {
+    try {
+      await handleSaveFile();
+      await handleSaveObjects();
+      alert("空間とオブジェクトが保存されました！");
+    } catch (error) {
+      console.error("保存中にエラーが発生しました", error);
+      alert("保存に失敗しました");
+    }
+  };
+
+  const handleLoadAll = async () => {
+    try {
+      await handleLoadFile();
+      await handleLoadObjects();
+      alert("空間とオブジェクトが読み込まれました！");
+    } catch (error) {
+      console.error("読み込み中にエラーが発生しました", error);
+      alert("読み込みに失敗しました");
+    }
+  };
 
   return (
     <div className="sidebar">
@@ -84,14 +107,14 @@ const Sidebar = ({
       ) : (
         <button onClick={openLoginModal}>ログイン</button>
       )}
-      <button onClick={handleSaveFile}>ファイルを保存</button>
-      <button onClick={handleLoadFile}>ファイルを読み込む</button>
+      <button onClick={handleSaveAll}>ファイルを新規保存・上書き</button>
+      <button onClick={handleLoadAll}>ファイルを読み込む</button>
       <button onClick={() => openPopup("size")}>空間のサイズ・操作・色</button>
       <button onClick={() => openPopup("objectSize")}>オブジェクト生成</button>
       <button onClick={() => openPopup("objectControl")}>
         オブジェクト操作
       </button>
-      <button onClick={() => openPopup("importLog")}>
+      <button onClick={() => openPopup("importdehaLog")}>
         サイズ測定からインポート
       </button>
       <button onClick={() => openPopup("objectLog")}>オブジェクトログ</button>

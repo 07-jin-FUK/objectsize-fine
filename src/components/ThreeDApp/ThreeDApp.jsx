@@ -3,6 +3,7 @@ import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 import "./ThreeDApp.css";
 import Sidebar from "./Sidebar.jsx";
+import axios from "axios";
 
 const ThreeDApp = ({
   handleBackToTop,
@@ -83,67 +84,299 @@ const ThreeDApp = ({
     z: 0,
   }); // 空間の移動量を保存
 
-  // 空間ID（仮に固定）
-  const spaceId = 1;
+  const [spaceId, setSpaceId] = useState(null);
+  useEffect(() => {
+    if (loggedInUser && loggedInUser.id) {
+      checkUserSpaceId(); // ユーザーが持っているスペースIDを確認
+    }
+  }, [loggedInUser]);
+  const checkUserSpaceId = async () => {
+    try {
+      const response = await axios.get(
+        `http://localhost:5000/spaces?user_id=${loggedInUser.id}`
+      );
+      const spaces = response.data.spaces;
 
+      if (spaces.length > 0) {
+        // すでにスペースを持っている場合、そのIDを設定
+        setSpaceId(spaces[0].id); // 1つ目の空間IDを使用
+        console.log("既存のスペースID:", spaces[0].id);
+      } else {
+        console.log("ユーザーは空間を持っていません");
+      }
+    } catch (error) {
+      console.error("空間IDの取得に失敗しました", error);
+    }
+  };
+
+  const createRoom = (width, height, depth) => {
+    const floorGeometry = new THREE.PlaneGeometry(width, depth);
+    const floorMaterial = new THREE.MeshBasicMaterial({ color: floorColor });
+    const floor = new THREE.Mesh(floorGeometry, floorMaterial);
+    floor.rotation.x = -Math.PI / 2;
+    floor.position.set(spacePosition.x, 100 + spacePosition.y, spacePosition.z);
+    sceneRef.current.add(floor);
+
+    const backWallGeometry = new THREE.PlaneGeometry(width, height);
+    const backWallMaterial = new THREE.MeshBasicMaterial({
+      color: backColor,
+      side: THREE.DoubleSide,
+    });
+    const backWall = new THREE.Mesh(backWallGeometry, backWallMaterial);
+    backWall.position.set(
+      spacePosition.x,
+      height / 2 + 100 + spacePosition.y,
+      -depth / 2 + spacePosition.z
+    );
+    sceneRef.current.add(backWall);
+
+    const leftWallGeometry = new THREE.PlaneGeometry(depth, height);
+    const leftWallMaterial = new THREE.MeshBasicMaterial({
+      color: leftSideColor,
+      side: THREE.DoubleSide,
+    });
+    const leftWall = new THREE.Mesh(leftWallGeometry, leftWallMaterial);
+    leftWall.rotation.y = Math.PI / 2;
+    leftWall.position.set(
+      -width / 2 + spacePosition.x,
+      height / 2 + 100 + spacePosition.y,
+      spacePosition.z
+    );
+    sceneRef.current.add(leftWall);
+
+    if (!isSingleSided) {
+      const rightWallGeometry = new THREE.PlaneGeometry(depth, height);
+      const rightWallMaterial = new THREE.MeshBasicMaterial({
+        color: rightSideColor,
+        side: THREE.DoubleSide,
+      });
+      const rightWall = new THREE.Mesh(rightWallGeometry, rightWallMaterial);
+      rightWall.rotation.y = -Math.PI / 2;
+      rightWall.position.set(
+        width / 2 + spacePosition.x,
+        height / 2 + 100 + spacePosition.y,
+        spacePosition.z
+      );
+      sceneRef.current.add(rightWall);
+    }
+
+    const edgesMaterial = new THREE.LineBasicMaterial({ color: 0x000000 });
+    const floorEdges = new THREE.EdgesGeometry(floorGeometry);
+    const floorLine = new THREE.LineSegments(floorEdges, edgesMaterial);
+    floor.add(floorLine);
+
+    const backEdges = new THREE.EdgesGeometry(backWallGeometry);
+    const backLine = new THREE.LineSegments(backEdges, edgesMaterial);
+    backWall.add(backLine);
+
+    const leftEdges = new THREE.EdgesGeometry(leftWallGeometry);
+    const leftLine = new THREE.LineSegments(leftEdges, edgesMaterial);
+    leftWall.add(leftLine);
+
+    rendererRef.current.render(sceneRef.current, cameraRef.current);
+  };
+
+  const handleSaveObjects = async () => {
+    if (!loggedInUser || !loggedInUser.id || !spaceId) {
+      alert("空間またはユーザー情報が不足しています。");
+      return;
+    }
+
+    const objectsData = objectsRef.current.map((obj) => ({
+      object_type: obj.objectType,
+      position: {
+        x: obj.object.position.x,
+        y: obj.object.position.y,
+        z: obj.object.position.z,
+      },
+      size:
+        obj.objectType === "cube"
+          ? {
+              width: obj.object.geometry.parameters.width,
+              height: obj.object.geometry.parameters.height,
+              depth: obj.object.geometry.parameters.depth,
+            }
+          : {
+              diameter: obj.object.geometry.parameters.radiusTop * 2,
+              height: obj.object.geometry.parameters.height,
+            },
+      color: obj.object.material.color.getStyle(),
+    }));
+
+    // ここでログを出力してデータを確認する
+    console.log("Saving objects:", objectsData);
+
+    try {
+      const response = await axios.post(
+        `http://localhost:5000/spaces/${spaceId}/save-objects`,
+        { objects: objectsData }
+      );
+      alert("オブジェクトが保存されました");
+    } catch (error) {
+      console.error("オブジェクト保存中にエラーが発生しました", error);
+      alert("オブジェクトの保存に失敗しました");
+    }
+  };
+
+  // 空間データの保存処理
   const handleSaveFile = async () => {
+    console.log("Logged in user:", loggedInUser);
+
+    if (!loggedInUser || !loggedInUser.id) {
+      alert("空間またはユーザー情報が不足しています。");
+      return;
+    }
+
     const data = {
-      dimensions, // 空間のサイズ
-      backgroundColor, // 背景色
-      floorColor, // 床の色
-      objectLogs, // オブジェクト情報
-      isSingleSided, // 側面設定
+      user_id: loggedInUser.id, // ログインしているユーザーのID
+      dimensions: {
+        width: dimensions.width,
+        height: dimensions.height,
+        depth: dimensions.depth,
+      },
+      floorColor,
+      backColor,
+      leftSideColor,
+      rightSideColor,
+      backgroundColor,
+      isSingleSided,
     };
 
     try {
-      await axios.post(`/spaces/${spaceId}/save`, data);
-      alert("空間とオブジェクトが保存されました");
+      if (spaceId) {
+        // 既にスペースがある場合は上書き保存
+        const response = await axios.post(
+          `http://localhost:5000/spaces/${spaceId}/save`,
+          data
+        );
+        alert("既存の空間が保存されました");
+      } else {
+        // スペースがない場合は新しく作成
+        const response = await axios.post(
+          `http://localhost:5000/spaces/new`,
+          data
+        );
+        const createdSpaceId = response.data.space_id;
+        setSpaceId(createdSpaceId); // 作成されたspaceIdを設定
+        alert("新しい空間が作成されました");
+      }
     } catch (error) {
       console.error("保存中にエラーが発生しました", error);
       alert("保存に失敗しました");
     }
   };
 
-  // 空間とオブジェクトを呼び出す関数
+  const clearScene = () => {
+    if (sceneRef.current) {
+      while (sceneRef.current.children.length > 0) {
+        const object = sceneRef.current.children[0];
+        sceneRef.current.remove(object);
+      }
+    }
+  };
+
   const handleLoadFile = async () => {
+    console.log("Loading spaces for user:", loggedInUser);
+
+    if (!loggedInUser || !loggedInUser.id) {
+      alert("ユーザー情報が見つかりません。ログインしてください。");
+      return;
+    }
+
     try {
-      const response = await axios.get(`/spaces/${spaceId}`);
+      const response = await axios.get(
+        `http://localhost:5000/spaces?user_id=${loggedInUser.id}`
+      );
       const data = response.data;
 
-      // 保存されたデータを復元
-      setDimensions(data.space.dimensions);
-      setBackgroundColor(data.space.background_color);
-      setFloorColor(data.space.floor_color);
-      setIsSingleSided(data.space.is_single_sided);
-      setObjectLogs(data.objects.map((obj) => JSON.parse(obj.object_data)));
+      if (!data.spaces || data.spaces.length === 0) {
+        throw new Error("空間データまたは寸法が欠落しています");
+      }
 
-      // オブジェクトの描画をリセットして復元
-      objectsRef.current = data.objects.map((obj) =>
-        createObjectFromLog(JSON.parse(obj.object_data))
+      const space = data.spaces[0];
+      const { width, height, depth } = JSON.parse(space.dimensions);
+
+      // 各色の状態を更新
+      setBackgroundColor(space.background_color);
+      setFloorColor(space.floor_color);
+      setBackColor(space.back_color);
+      setLeftSideColor(space.left_side_color || "#f0f0f0");
+      setRightSideColor(space.right_side_color || "#f0f0f0");
+      setDimensions({ width, height, depth });
+      setIsSingleSided(space.is_single_sided);
+
+      // シーンをクリア
+      clearScene();
+
+      // 新しい空間を再描画
+      createRoom(width, height, depth);
+
+      rendererRef.current.render(sceneRef.current, cameraRef.current);
+
+      alert(
+        `空間サイズと色が読み込まれました: 幅=${width}, 高さ=${height}, 奥行=${depth}`
       );
-      alert("空間とオブジェクトが読み込まれました");
     } catch (error) {
       console.error("読み込み中にエラーが発生しました", error);
       alert("読み込みに失敗しました");
     }
   };
 
+  const handleLoadObjects = async () => {
+    if (!loggedInUser || !loggedInUser.id || !spaceId) {
+      alert("空間またはユーザー情報が不足しています。");
+      return;
+    }
+
+    try {
+      const response = await axios.get(
+        `http://localhost:5000/spaces/${spaceId}/objects`
+      );
+      const objectsData = response.data.objects;
+
+      objectsData.forEach((obj) => {
+        createObjectFromLog(obj); // オブジェクトを再描写する関数
+        console.log("Camera position:", cameraRef.current.position);
+        console.log("Object position:", obj.position);
+        console.log("Object size:", obj.size);
+        console.log("Object color:", obj.color);
+      });
+
+      alert("オブジェクトが読み込まれました");
+    } catch (error) {
+      console.error("オブジェクト読み込み中にエラーが発生しました", error);
+      alert("オブジェクトの読み込みに失敗しました");
+    }
+  };
   const createObjectFromLog = (log) => {
-    // ログからオブジェクトを再作成するロジック
     let geometry, material;
     const color = new THREE.Color(log.color);
 
-    if (log.objectType === "cube") {
-      geometry = new THREE.BoxGeometry(log.width, log.height, log.depth);
-    } else if (log.objectType === "cylinder") {
-      const radius = log.diameter / 2;
-      geometry = new THREE.CylinderGeometry(radius, radius, log.height, 32);
+    if (log.object_type === "cube") {
+      geometry = new THREE.BoxGeometry(
+        log.size.width,
+        log.size.height,
+        log.size.depth
+      );
+    } else if (log.object_type === "cylinder") {
+      const radius = log.size.diameter / 2;
+      geometry = new THREE.CylinderGeometry(
+        radius,
+        radius,
+        log.size.height,
+        32
+      );
     }
 
     material = new THREE.MeshBasicMaterial({ color });
     const mesh = new THREE.Mesh(geometry, material);
+
+    // オブジェクトの位置を設定
     mesh.position.set(log.position.x, log.position.y, log.position.z);
-    return mesh;
+
+    // シーンに追加
+    sceneRef.current.add(mesh);
+    rendererRef.current.render(sceneRef.current, cameraRef.current);
   };
 
   const resetToInitialPositions = () => {
@@ -312,77 +545,6 @@ const ThreeDApp = ({
     const controls = new OrbitControls(camera, renderer.domElement);
     controlsRef.current = controls;
     controlsRef.current.enabled = true; // 初期状態では有効
-
-    const createRoom = (width, height, depth) => {
-      const floorGeometry = new THREE.PlaneGeometry(width, depth);
-      const floorMaterial = new THREE.MeshBasicMaterial({ color: floorColor });
-      const floor = new THREE.Mesh(floorGeometry, floorMaterial);
-      floor.rotation.x = -Math.PI / 2;
-      floor.position.set(
-        spacePosition.x,
-        100 + spacePosition.y,
-        spacePosition.z
-      );
-      scene.add(floor);
-
-      const backWallGeometry = new THREE.PlaneGeometry(width, height);
-      const backWallMaterial = new THREE.MeshBasicMaterial({
-        color: backColor,
-        side: THREE.DoubleSide,
-      });
-      const backWall = new THREE.Mesh(backWallGeometry, backWallMaterial);
-      backWall.position.set(
-        spacePosition.x,
-        height / 2 + 100 + spacePosition.y,
-        -depth / 2 + spacePosition.z
-      );
-      scene.add(backWall);
-
-      const leftWallGeometry = new THREE.PlaneGeometry(depth, height);
-      const leftWallMaterial = new THREE.MeshBasicMaterial({
-        color: leftSideColor,
-        side: THREE.DoubleSide,
-      });
-      const leftWall = new THREE.Mesh(leftWallGeometry, leftWallMaterial);
-      leftWall.rotation.y = Math.PI / 2;
-      leftWall.position.set(
-        -width / 2 + spacePosition.x,
-        height / 2 + 100 + spacePosition.y,
-        spacePosition.z
-      );
-      scene.add(leftWall);
-
-      if (!isSingleSided) {
-        const rightWallGeometry = new THREE.PlaneGeometry(depth, height);
-        const rightWallMaterial = new THREE.MeshBasicMaterial({
-          color: rightSideColor,
-          side: THREE.DoubleSide,
-        });
-        const rightWall = new THREE.Mesh(rightWallGeometry, rightWallMaterial);
-        rightWall.rotation.y = -Math.PI / 2;
-        rightWall.position.set(
-          width / 2 + spacePosition.x,
-          height / 2 + 100 + spacePosition.y,
-          spacePosition.z
-        );
-        scene.add(rightWall);
-      }
-
-      const edgesMaterial = new THREE.LineBasicMaterial({ color: 0x000000 });
-      const floorEdges = new THREE.EdgesGeometry(floorGeometry);
-      const floorLine = new THREE.LineSegments(floorEdges, edgesMaterial);
-      floor.add(floorLine);
-
-      const backEdges = new THREE.EdgesGeometry(backWallGeometry);
-      const backLine = new THREE.LineSegments(backEdges, edgesMaterial);
-      backWall.add(backLine);
-
-      const leftEdges = new THREE.EdgesGeometry(leftWallGeometry);
-      const leftLine = new THREE.LineSegments(leftEdges, edgesMaterial);
-      leftWall.add(leftLine);
-
-      renderer.render(scene, camera);
-    };
 
     createRoom(dimensions.width, dimensions.height, dimensions.depth);
 
@@ -1233,6 +1395,8 @@ const ThreeDApp = ({
           openLoginModal={openLoginModal}
           handleSaveFile={handleSaveFile}
           handleLoadFile={handleLoadFile}
+          handleSaveObjects={handleSaveObjects}
+          handleLoadObjects={handleLoadObjects}
         />
       </div>
 
@@ -1274,7 +1438,7 @@ const ThreeDApp = ({
                   type="number"
                   name="depth"
                   step="0.1"
-                  value={dimensions.width / 100}
+                  value={dimensions.depth / 100}
                   onChange={handleInputChange}
                 />
               </label>
@@ -1284,7 +1448,7 @@ const ThreeDApp = ({
                   type="number"
                   name="height"
                   step="0.1"
-                  value={dimensions.width / 100}
+                  value={dimensions.height / 100}
                   onChange={handleInputChange}
                 />
               </label>

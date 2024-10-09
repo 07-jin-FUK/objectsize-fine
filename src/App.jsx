@@ -64,7 +64,7 @@ function App() {
               <p>
                 こんにちわ、
                 <span style={{ fontWeight: "bold", fontSize: "18px" }}>
-                  {loggedInUser}
+                  {loggedInUser.name}
                 </span>
                 さん
               </p>
