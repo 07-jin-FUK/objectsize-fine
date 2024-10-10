@@ -10,7 +10,7 @@ const Login = ({ setLoggedInUser, closeLoginModal }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await axios.post("http://localhost:5000/login", {
+      const response = await axios.post("https://python-api-5yn6.onrender.com/login", {
         email,
         password,
       });
