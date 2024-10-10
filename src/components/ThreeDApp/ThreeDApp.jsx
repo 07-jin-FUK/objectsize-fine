@@ -84,31 +84,28 @@ const ThreeDApp = ({
     z: 0,
   }); // 空間の移動量を保存
 
-  const [spaceId, setSpaceId] = useState(null);
-  useEffect(() => {
-    if (loggedInUser && loggedInUser.id) {
-      checkUserSpaceId(); // ユーザーが持っているスペースIDを確認
-    }
-  }, [loggedInUser]);
-  const checkUserSpaceId = async () => {
+  const handleSaveAll = async () => {
     try {
-      const response = await axios.get(
-        `http://localhost:5000/spaces?user_id=${loggedInUser.id}`
-      );
-      const spaces = response.data.spaces;
-
-      if (spaces.length > 0) {
-        // すでにスペースを持っている場合、そのIDを設定
-        setSpaceId(spaces[0].id); // 1つ目の空間IDを使用
-        console.log("既存のスペースID:", spaces[0].id);
-      } else {
-        console.log("ユーザーは空間を持っていません");
-      }
+      await handleSaveFile(); // 空間を保存
+      await handleSaveObjects(); // オブジェクトを保存
+      alert("保存が完了しました");
     } catch (error) {
-      console.error("空間IDの取得に失敗しました", error);
+      console.error("保存中にエラーが発生しました", error);
+      alert("保存に失敗しました");
     }
   };
 
+  const handleLoadAll = async () => {
+    try {
+      await handleLoadFile();
+      await handleLoadObjects();
+    } catch (error) {
+      console.error("読み込み中にエラーが発生しました", error);
+      alert("読み込みに失敗しました");
+    }
+  };
+
+  // 空間を作成
   const createRoom = (width, height, depth) => {
     const floorGeometry = new THREE.PlaneGeometry(width, depth);
     const floorMaterial = new THREE.MeshBasicMaterial({ color: floorColor });
@@ -177,39 +174,63 @@ const ThreeDApp = ({
   };
 
   const handleSaveObjects = async () => {
-    if (!loggedInUser || !loggedInUser.id || !spaceId) {
-      alert("空間またはユーザー情報が不足しています。");
+    if (!loggedInUser || !loggedInUser.id) {
+      alert("ユーザー情報が不足しています。");
       return;
     }
 
-    const objectsData = objectsRef.current.map((obj) => ({
-      object_type: obj.objectType,
-      position: {
-        x: obj.object.position.x,
-        y: obj.object.position.y,
-        z: obj.object.position.z,
-      },
-      size:
-        obj.objectType === "cube"
-          ? {
-              width: obj.object.geometry.parameters.width,
-              height: obj.object.geometry.parameters.height,
-              depth: obj.object.geometry.parameters.depth,
-            }
-          : {
-              diameter: obj.object.geometry.parameters.radiusTop * 2,
-              height: obj.object.geometry.parameters.height,
-            },
-      color: obj.object.material.color.getStyle(),
-    }));
+    const objectsData = objectsRef.current.map((obj) => {
+      const isWireframe = obj.object instanceof THREE.LineSegments;
 
-    // ここでログを出力してデータを確認する
+      let size;
+      if (isWireframe && obj.objectType === "cube") {
+        size = {
+          width: obj.geometry.parameters.width,
+          height: obj.geometry.parameters.height,
+          depth: obj.geometry.parameters.depth,
+        };
+      } else if (isWireframe && obj.objectType === "cylinder") {
+        size = {
+          diameter: obj.geometry.parameters.radiusTop * 2,
+          height: obj.geometry.parameters.height,
+        };
+      } else {
+        size =
+          obj.objectType === "cube"
+            ? {
+                width: obj.object.geometry.parameters.width,
+                height: obj.object.geometry.parameters.height,
+                depth: obj.object.geometry.parameters.depth,
+              }
+            : {
+                diameter: obj.object.geometry.parameters.radiusTop * 2,
+                height: obj.object.geometry.parameters.height,
+              };
+      }
+
+      return {
+        object_type: obj.objectType,
+        // JSON オブジェクトとして保存するため、文字列化しない
+        position: {
+          x: obj.object.position.x,
+          y: obj.object.position.y,
+          z: obj.object.position.z,
+        },
+        size, // 同様に、size も JSON オブジェクトとして保持
+        color: `#${obj.object.material.color.getHexString()}`,
+        isWireframe: isWireframe,
+      };
+    });
+
     console.log("Saving objects:", objectsData);
 
     try {
-      const response = await axios.post(
-        `http://localhost:5000/spaces/${spaceId}/save-objects`,
-        { objects: objectsData }
+      // user_idを使用してPOSTリクエストを送信
+      await axios.post(
+        `https://python-api-5yn6.onrender.com/spaces/${loggedInUser.id}/save-objects`,
+        {
+          objects: objectsData,
+        }
       );
       alert("オブジェクトが保存されました");
     } catch (error) {
@@ -218,17 +239,16 @@ const ThreeDApp = ({
     }
   };
 
-  // 空間データの保存処理
   const handleSaveFile = async () => {
     console.log("Logged in user:", loggedInUser);
 
     if (!loggedInUser || !loggedInUser.id) {
-      alert("空間またはユーザー情報が不足しています。");
+      alert("ユーザー情報が不足しています。");
       return;
     }
 
     const data = {
-      user_id: loggedInUser.id, // ログインしているユーザーのID
+      user_id: loggedInUser.id,
       dimensions: {
         width: dimensions.width,
         height: dimensions.height,
@@ -243,29 +263,19 @@ const ThreeDApp = ({
     };
 
     try {
-      if (spaceId) {
-        // 既にスペースがある場合は上書き保存
-        const response = await axios.post(
-          `http://localhost:5000/spaces/${spaceId}/save`,
-          data
-        );
-        alert("既存の空間が保存されました");
-      } else {
-        // スペースがない場合は新しく作成
-        const response = await axios.post(
-          `http://localhost:5000/spaces/new`,
-          data
-        );
-        const createdSpaceId = response.data.space_id;
-        setSpaceId(createdSpaceId); // 作成されたspaceIdを設定
-        alert("新しい空間が作成されました");
-      }
+      // user_idを使用してPOSTリクエストを送信
+      await axios.post(
+        `https://python-api-5yn6.onrender.com/spaces/${loggedInUser.id}/save`,
+        data
+      );
+      alert("空間が保存されました");
     } catch (error) {
       console.error("保存中にエラーが発生しました", error);
       alert("保存に失敗しました");
     }
   };
 
+  // シーンのクリア
   const clearScene = () => {
     if (sceneRef.current) {
       while (sceneRef.current.children.length > 0) {
@@ -275,6 +285,7 @@ const ThreeDApp = ({
     }
   };
 
+  // 空間データの読み込み
   const handleLoadFile = async () => {
     console.log("Loading spaces for user:", loggedInUser);
 
@@ -285,7 +296,7 @@ const ThreeDApp = ({
 
     try {
       const response = await axios.get(
-        `http://localhost:5000/spaces?user_id=${loggedInUser.id}`
+        `https://python-api-5yn6.onrender.com/spaces?user_id=${loggedInUser.id}`
       );
       const data = response.data;
 
@@ -296,7 +307,6 @@ const ThreeDApp = ({
       const space = data.spaces[0];
       const { width, height, depth } = JSON.parse(space.dimensions);
 
-      // 各色の状態を更新
       setBackgroundColor(space.background_color);
       setFloorColor(space.floor_color);
       setBackColor(space.back_color);
@@ -305,10 +315,7 @@ const ThreeDApp = ({
       setDimensions({ width, height, depth });
       setIsSingleSided(space.is_single_sided);
 
-      // シーンをクリア
       clearScene();
-
-      // 新しい空間を再描画
       createRoom(width, height, depth);
 
       rendererRef.current.render(sceneRef.current, cameraRef.current);
@@ -323,24 +330,48 @@ const ThreeDApp = ({
   };
 
   const handleLoadObjects = async () => {
-    if (!loggedInUser || !loggedInUser.id || !spaceId) {
+    if (!loggedInUser || !loggedInUser.id) {
       alert("空間またはユーザー情報が不足しています。");
       return;
     }
 
     try {
-      const response = await axios.get(
-        `http://localhost:5000/spaces/${spaceId}/objects`
+      // サーバーから保存されたオブジェクトデータを取得
+      const objectsResponse = await axios.get(
+        `https://python-api-5yn6.onrender.com/spaces/${loggedInUser.id}/objects`
       );
-      const objectsData = response.data.objects;
+      const objectsData = objectsResponse.data.objects;
 
-      objectsData.forEach((obj) => {
-        createObjectFromLog(obj); // オブジェクトを再描写する関数
-        console.log("Camera position:", cameraRef.current.position);
-        console.log("Object position:", obj.position);
-        console.log("Object size:", obj.size);
-        console.log("Object color:", obj.color);
+      // 読み込んだオブジェクトをシーンに追加し、オブジェクトログに反映
+      const loadedLogs = objectsData.map((obj) => {
+        // オブジェクトをシーンに追加
+        createObjectFromLog({
+          ...obj,
+          size: typeof obj.size === "string" ? JSON.parse(obj.size) : obj.size,
+          position:
+            typeof obj.position === "string"
+              ? JSON.parse(obj.position)
+              : obj.position,
+        });
+
+        const parsedSize =
+          typeof obj.size === "string" ? JSON.parse(obj.size) : obj.size;
+
+        // オブジェクトログに情報を追加し、sizeも追加
+        return {
+          color: obj.color,
+          objectType: obj.object_type,
+          width: parsedSize?.width || undefined,
+          height: parsedSize?.height || undefined,
+          depth: parsedSize?.depth || undefined,
+          diameter: parsedSize?.diameter || undefined,
+          isWireframe: obj.isWireframe,
+          size: parsedSize, // sizeを追加
+        };
       });
+
+      // オブジェクトログを更新
+      setObjectLogs(loadedLogs);
 
       alert("オブジェクトが読み込まれました");
     } catch (error) {
@@ -348,34 +379,82 @@ const ThreeDApp = ({
       alert("オブジェクトの読み込みに失敗しました");
     }
   };
+
   const createObjectFromLog = (log) => {
     let geometry, material;
     const color = new THREE.Color(log.color);
 
+    // 位置情報を数値として抽出
+    let parsedPosition =
+      typeof log.position === "string"
+        ? JSON.parse(log.position)
+        : log.position;
+    const xPos = parseFloat(parsedPosition.x);
+    const yPos = parseFloat(parsedPosition.y);
+    const zPos = parseFloat(parsedPosition.z);
+
+    // サイズ情報を数値として抽出
+    let parsedSize =
+      typeof log.size === "string" ? JSON.parse(log.size) : log.size;
+
     if (log.object_type === "cube") {
-      geometry = new THREE.BoxGeometry(
-        log.size.width,
-        log.size.height,
-        log.size.depth
-      );
+      const width = parseFloat(parsedSize.width);
+      const height = parseFloat(parsedSize.height);
+      const depth = parseFloat(parsedSize.depth);
+
+      // キューブ型ジオメトリの作成
+      geometry = new THREE.BoxGeometry(width, height, depth);
     } else if (log.object_type === "cylinder") {
-      const radius = log.size.diameter / 2;
-      geometry = new THREE.CylinderGeometry(
-        radius,
-        radius,
-        log.size.height,
-        32
-      );
+      const diameter = parseFloat(parsedSize.diameter);
+      const radius = diameter / 2;
+      const height = parseFloat(parsedSize.height);
+
+      // 円柱型ジオメトリの作成
+      geometry = new THREE.CylinderGeometry(radius, radius, height, 32);
     }
 
-    material = new THREE.MeshBasicMaterial({ color });
-    const mesh = new THREE.Mesh(geometry, material);
+    const isWireframe = Boolean(log.is_wireframe);
 
-    // オブジェクトの位置を設定
-    mesh.position.set(log.position.x, log.position.y, log.position.z);
+    if (isWireframe) {
+      // ワイヤーフレームを作成
+      material = new THREE.LineBasicMaterial({ color });
+      const edgesGeometry = new THREE.EdgesGeometry(geometry);
+      const wireframe = new THREE.LineSegments(edgesGeometry, material);
+      wireframe.position.set(xPos, yPos, zPos);
 
-    // シーンに追加
-    sceneRef.current.add(mesh);
+      // シーンに追加
+      sceneRef.current.add(wireframe);
+
+      // `objectsRef.current` にも追加して管理
+      objectsRef.current.push({
+        color: log.color,
+        object: wireframe,
+        objectType: log.object_type,
+        geometry,
+      });
+
+      console.log("Wireframe created at position:", wireframe.position);
+    } else {
+      // 通常のマテリアルでメッシュを作成
+      material = new THREE.MeshBasicMaterial({ color });
+      const mesh = new THREE.Mesh(geometry, material);
+      mesh.position.set(xPos, yPos, zPos);
+
+      // シーンに追加
+      sceneRef.current.add(mesh);
+
+      // `objectsRef.current` にも追加して管理
+      objectsRef.current.push({
+        color: log.color,
+        object: mesh,
+        objectType: log.object_type,
+        geometry,
+      });
+
+      console.log("Mesh created at position:", mesh.position);
+    }
+
+    // シーンを再レンダリング
     rendererRef.current.render(sceneRef.current, cameraRef.current);
   };
 
@@ -634,7 +713,12 @@ const ThreeDApp = ({
         spacePosition.z
       );
       scene.add(wireframe);
-      objectsRef.current.push({ color: color, object: wireframe, objectType });
+      objectsRef.current.push({
+        color: color,
+        object: wireframe,
+        objectType,
+        geometry,
+      });
     } else {
       // ワイヤーフレームでない場合
       if (objectType === "cube") {
@@ -654,6 +738,7 @@ const ThreeDApp = ({
           32
         );
       }
+      console.log(objectsRef.current);
 
       material = new THREE.MeshBasicMaterial({ color });
       const mesh = new THREE.Mesh(geometry, material);
@@ -1397,6 +1482,8 @@ const ThreeDApp = ({
           handleLoadFile={handleLoadFile}
           handleSaveObjects={handleSaveObjects}
           handleLoadObjects={handleLoadObjects}
+          handleSaveAll={handleSaveAll}
+          handleLoadAll={handleLoadAll}
         />
       </div>
 

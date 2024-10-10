@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import ImagePopup from "./ImagePopup";
+import axios from "axios";
 
 const Sidebar = ({
   openPopup,
@@ -19,10 +20,8 @@ const Sidebar = ({
   loggedInUser,
   handleLogout,
   openLoginModal,
-  handleSaveFile,
-  handleLoadFile,
-  handleSaveObjects,
-  handleLoadObjects,
+  handleSaveAll,
+  handleLoadAll,
 }) => {
   const [showResetConfirmation, setShowResetConfirmation] = useState(false);
   const [isPopupOpen, setIsPopupOpen] = useState(false); // ポップアップ表示状態を管理
@@ -75,27 +74,6 @@ const Sidebar = ({
 
   const handleCancelReset = () => {
     setShowResetConfirmation(false); // ポップアップを閉じる
-  };
-  const handleSaveAll = async () => {
-    try {
-      await handleSaveFile();
-      await handleSaveObjects();
-      alert("空間とオブジェクトが保存されました！");
-    } catch (error) {
-      console.error("保存中にエラーが発生しました", error);
-      alert("保存に失敗しました");
-    }
-  };
-
-  const handleLoadAll = async () => {
-    try {
-      await handleLoadFile();
-      await handleLoadObjects();
-      alert("空間とオブジェクトが読み込まれました！");
-    } catch (error) {
-      console.error("読み込み中にエラーが発生しました", error);
-      alert("読み込みに失敗しました");
-    }
   };
 
   return (
