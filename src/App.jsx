@@ -8,9 +8,10 @@ import "./App.css";
 
 import { DataStorageProvider } from "./components/DataStorage/DataStorage";
 import Login from "./components/Login/Login";
-import ThreeDApp from "./components/ThreeDApp/ThreeDapp";
+
 import Register from "./components/Login/Register";
 import Modal from "./components/Login/Modal";
+import ThreeDApp from "./components/ThreeDApp/ThreeDapp.jsx";
 
 function App() {
   const [isLoginOpen, setLoginOpen] = useState(false);
