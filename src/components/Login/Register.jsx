@@ -11,7 +11,7 @@ const Register = ({ closeRegisterModal, openLoginModal }) => {
   const handleRegister = async (e) => {
     e.preventDefault();
     try {
-      const response = await axios.post("http://127.0.0.1:5000/register", {
+      const response = await axios.post("https://python-api-5yn6.onrender.com/register", {
         name,
         email,
         password,
