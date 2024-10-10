@@ -11,7 +11,7 @@ import Login from "./components/Login/Login";
 
 import Register from "./components/Login/Register";
 import Modal from "./components/Login/Modal";
-import ThreeDApp from "./components/ThreeDApp/ThreeDapp.jsx";
+import ThreeDapp from "./components/ThreeDApp/ThreeDapp";
 
 function App() {
   const [isLoginOpen, setLoginOpen] = useState(false);
@@ -148,7 +148,7 @@ function App() {
 
         {/* 新しい3Dアプリを表示 */}
         {mode === "3dapp" && (
-          <ThreeDApp
+          <ThreeDapp
             handleBackToTop={handleBackToTop}
             loggedInUser={loggedInUser}
             handleLogout={handleLogout}

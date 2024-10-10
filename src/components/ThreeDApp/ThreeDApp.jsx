@@ -5,7 +5,7 @@ import "./ThreeDApp.css";
 import Sidebar from "./Sidebar.jsx";
 import axios from "axios";
 
-const ThreeDApp = ({
+const ThreeDapp = ({
   handleBackToTop,
   loggedInUser,
   handleLogout,
@@ -1958,4 +1958,4 @@ const ThreeDApp = ({
   );
 };
 
-export default ThreeDApp;
+export default ThreeDapp;
