@@ -11,11 +11,14 @@ const Register = ({ closeRegisterModal, openLoginModal }) => {
   const handleRegister = async (e) => {
     e.preventDefault();
     try {
-      const response = await axios.post("http://127.0.0.1:5000/register", {
-        name,
-        email,
-        password,
-      });
+      const response = await axios.post(
+        "https://python-api-5yn6.onrender.com/register",
+        {
+          name,
+          email,
+          password,
+        }
+      );
 
       // 成功メッセージを表示
       setMessage("登録が完了しました！ログイン画面に移行します。");

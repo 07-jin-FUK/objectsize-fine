@@ -10,10 +10,13 @@ const Login = ({ setLoggedInUser, closeLoginModal }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await axios.post("http://localhost:5000/login", {
-        email,
-        password,
-      });
+      const response = await axios.post(
+        "https://python-api-5yn6.onrender.com/login",
+        {
+          email,
+          password,
+        }
+      );
 
       if (response.status === 200) {
         const { token, name, id } = response.data; // id を取得
