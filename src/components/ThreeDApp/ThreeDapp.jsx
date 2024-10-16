@@ -1812,105 +1812,76 @@ const ThreeDapp = ({
           </div>
         )}
 
-        {activePanel === "importLog" && (
-          <div className="section">
-            <h3>サイズ測定の結果をインポートします。</h3>
-            <ul>
-              {binedLogs.map((log, index) => {
-                // データタイプの判定
-                const isCylinder = log.diameter && log.height;
-                const isCube =
-                  log.top_horizontal &&
-                  log.top_vertical &&
-                  log.side_height &&
-                  log.top_edges;
-                const isPlane = log.result?.max_width && log.result?.max_height;
+      {activePanel === "importLog" && (
+  <div className="section">
+    <h3>サイズ測定の結果をインポートします。</h3>
+    <ul>
+      {binedLogs.map((log, index) => {
+        // データタイプの判定
+        const isCylinder = log.diameter && log.height;
+        const isCube =
+          log.top_horizontal && log.top_vertical && log.side_height && log.top_edges;
+        const isPlane = log.result?.max_width && log.result?.max_height;
 
-                // 表示する必要がないデータはスキップ
-                if (!isCube && !isCylinder && !isPlane) return null;
+        // 表示する必要がないデータはスキップ
+        if (!isCube && !isCylinder && !isPlane) return null;
 
-                const parseMeasurement = (value) => {
-                  return typeof value === "string"
-                    ? value.replace("cm", "")
-                    : value;
-                };
+        // サイズの単位（cm）を取り除く関数
+        const parseMeasurement = (value) => typeof value === "string" ? value.replace("cm", "") : value;
 
-                return (
-                  <li key={index}>
-                    {/* 'location' の名前のみを表示 */}
-                    {log.location && <p>名前: {log.location}</p>}
+        return (
+          <li key={index}>
+            {/* 'location' の名前のみを表示 */}
+            {log.location && <p>名前: {log.location}</p>}
 
-                    {/* 平面データの場合 */}
-                    {isPlane && (
-                      <>
-                        <p>横幅: {parseMeasurement(log.result.max_width)} cm</p>
-                        <p>
-                          奥行き: {parseMeasurement(log.result.max_height)} cm
-                        </p>
-                        <p>高さ: 3 cm（デフォルト値）</p>
-                        <button
-                          onClick={() => handleObjectCreation(log)}
-                          className="create-object-button"
-                        >
-                          平面オブジェクトを生成
-                        </button>
-                      </>
-                    )}
+            {/* 平面データの場合 */}
+            {isPlane && (
+              <>
+                <p>横幅: {parseMeasurement(log.result.max_width)} cm</p>
+                <p>奥行き: {parseMeasurement(log.result.max_height)} cm</p>
+                <p>高さ: 3 cm（デフォルト値）</p>
+                <button onClick={() => handleObjectCreation(log)} className="create-object-button">
+                  平面オブジェクトを生成
+                </button>
+              </>
+            )}
 
-                    {/* キューブ型の場合 */}
-                    {isCube && (
-                      <>
-                        <p>横幅: {parseMeasurement(log.top_horizontal)} cm</p>
-                        <p>奥行き: {parseMeasurement(log.top_vertical)} cm</p>
-                        <p>高さ: {parseMeasurement(log.side_height)} cm</p>
-                        <p>
-                          上辺: {parseMeasurement(log.top_edges.top_edge)} cm
-                        </p>
-                        <p>
-                          右辺: {parseMeasurement(log.top_edges.right_edge)} cm
-                        </p>
-                        <p>
-                          下辺: {parseMeasurement(log.top_edges.bottom_edge)} cm
-                        </p>
-                        <p>
-                          左辺: {parseMeasurement(log.top_edges.left_edge)} cm
-                        </p>
-                        <button
-                          onClick={() => handleObjectCreation(log)}
-                          className="create-object-button"
-                        >
-                          キューブオブジェクトを生成
-                        </button>
-                      </>
-                    )}
+            {/* キューブ型の場合 */}
+            {isCube && (
+              <>
+                <p>横幅: {parseMeasurement(log.top_horizontal)} cm</p>
+                <p>奥行き: {parseMeasurement(log.top_vertical)} cm</p>
+                <p>高さ: {parseMeasurement(log.side_height)} cm</p>
+                {Object.entries(log.top_edges).map(([edgeName, edgeValue]) => (
+                  <p key={edgeName}>{edgeName}: {parseMeasurement(edgeValue)} cm</p>
+                ))}
+                <button onClick={() => handleObjectCreation(log)} className="create-object-button">
+                  キューブオブジェクトを生成
+                </button>
+              </>
+            )}
 
-                    {/* 円柱型の場合 */}
-                    {isCylinder && (
-                      <>
-                        <p>直径: {parseMeasurement(log.diameter)} cm</p>
-                        <p>高さ: {parseMeasurement(log.height)} cm</p>
-                        <button
-                          onClick={() => handleObjectCreation(log)}
-                          className="create-object-button"
-                        >
-                          円柱オブジェクトを生成
-                        </button>
-                      </>
-                    )}
+            {/* 円柱型の場合 */}
+            {isCylinder && (
+              <>
+                <p>直径: {parseMeasurement(log.diameter)} cm</p>
+                <p>高さ: {parseMeasurement(log.height)} cm</p>
+                <button onClick={() => handleObjectCreation(log)} className="create-object-button">
+                  円柱オブジェクトを生成
+                </button>
+              </>
+            )}
 
-                    {/* 削除ボタン */}
-                    <button
-                      onClick={() => handleDeleteLog(index)}
-                      className="delete-log-button"
-                    >
-                      削除
-                    </button>
-                  </li>
-                );
-              })}
-            </ul>
-          </div>
-        )}
+            {/* 削除ボタン */}
+            <button onClick={() => handleDeleteLog(index)} className="delete-log-button">
+              削除
+            </button>
+          </li>
+        );
+      })}
+    </ul>
+  </div>
+)}
 
         {activePanel === "objectLog" && (
           <div className="section">
