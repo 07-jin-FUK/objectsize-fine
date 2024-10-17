@@ -92,7 +92,7 @@ const Sidebar = ({
       <button onClick={() => openPopup("objectControl")}>
         オブジェクト操作
       </button>
-      <button onClick={() => openPopup("importdehaLog")}>
+      <button onClick={() => openPopup("importLog")}>
         サイズ測定からインポート
       </button>
       <button onClick={() => openPopup("objectLog")}>オブジェクトログ</button>
