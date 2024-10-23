@@ -569,7 +569,7 @@ button.yes-button:hover{
     display: flex;
     justify-content: center;
     align-items: center;
-    z-index: 1000;
+    z-index: 9000;
     /* 他の要素の上に表示されるように */
 }
 
@@ -580,12 +580,20 @@ button.yes-button:hover{
     border-radius: 8px;
     box-shadow: 0px 4px 15px rgba(0, 0, 0, 0.2);
     position: relative;
-    z-index: 1001;
+    z-index: 9001;
     /* オーバーレイの上に表示 */
     max-width: 90%;
     max-height: 90%;
     overflow: auto;
     /* 画像やコンテンツが大きすぎる場合にスクロールを許可 */
+}
+
+.modal-overlay {
+    display: flex !important;
+}
+
+.modal-content {
+    display: block !important;
 }
 
 /* モーダル内の画像 */

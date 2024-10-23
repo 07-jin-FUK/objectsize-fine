@@ -1,4 +1,5 @@
 import React from "react";
+import "./ThreeDApp.css";
 
 const ImagePopup = ({ isOpen, onClose, imageDataURL, onSave }) => {
   if (!isOpen) return null;
