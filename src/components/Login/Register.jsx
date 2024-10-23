@@ -11,7 +11,6 @@ const Register = ({ closeRegisterModal, openLoginModal }) => {
   const handleRegister = async (e) => {
     e.preventDefault();
     try {
-<<<<<<< HEAD
       const response = await axios.post(
         "https://python-api-5yn6.onrender.com/register",
         {
@@ -20,13 +19,6 @@ const Register = ({ closeRegisterModal, openLoginModal }) => {
           password,
         }
       );
-=======
-      const response = await axios.post("https://python-api-5yn6.onrender.com/register", {
-        name,
-        email,
-        password,
-      });
->>>>>>> 3af4fae3ffd64605f730deb31befd83b9e2f4985
 
       // 成功メッセージを表示
       setMessage("登録が完了しました！ログイン画面に移行します。");

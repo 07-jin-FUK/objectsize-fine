@@ -10,7 +10,6 @@ const Login = ({ setLoggedInUser, closeLoginModal }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-<<<<<<< HEAD
       const response = await axios.post(
         "https://python-api-5yn6.onrender.com/login",
         {
@@ -18,12 +17,6 @@ const Login = ({ setLoggedInUser, closeLoginModal }) => {
           password,
         }
       );
-=======
-      const response = await axios.post("https://python-api-5yn6.onrender.com/login", {
-        email,
-        password,
-      });
->>>>>>> 3af4fae3ffd64605f730deb31befd83b9e2f4985
 
       if (response.status === 200) {
         const { token, name, id } = response.data; // id を取得
