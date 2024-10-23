@@ -5,42 +5,28 @@ import "./ThreeDApp.css";
 import Sidebar from "./Sidebar.jsx";
 import axios from "axios";
 
-const textureLoader = new THREE.TextureLoader();
-
 const ThreeDapp = ({
   handleBackToTop,
   loggedInUser,
   handleLogout,
   openLoginModal,
 }) => {
-  const [measurementLogs, setMeasurementLogs] = useState([]);
-  const [cylinderLogs, setCylinderLogs] = useState([]);
-  const [threeDMeasurementLogs, setThreeDMeasurementLogs] = useState([]);
-  const [binedLogs, setBinedLogs] = useState([]);
-  const [floorTexture, setFloorTexture] = useState(null);
-  const [backTexture, setBackTexture] = useState(null);
-  const [leftTexture, setLeftTexture] = useState(null);
-  const [rightTexture, setRightTexture] = useState(null);
-  const [backgroundTexture, setBackgroundTexture] = useState(null);
+  const [measurementLogs, setMeasurementLogs] = useState(
+    JSON.parse(localStorage.getItem("measurementLogs")) || []
+  );
+  const [cylinderLogs, setCylinderLogs] = useState(
+    JSON.parse(localStorage.getItem("cylinderLogs")) || []
+  );
+  const [threeDMeasurementLogs, setThreeDMeasurementLogs] = useState(
+    JSON.parse(localStorage.getItem("threeDMeasurementLogs")) || []
+  );
 
-  useEffect(() => {
-    const savedMeasurementLogs =
-      JSON.parse(localStorage.getItem("measurementLogs")) || [];
-    const savedCylinderLogs =
-      JSON.parse(localStorage.getItem("cylinderLogs")) || [];
-    const savedThreeDLogs =
-      JSON.parse(localStorage.getItem("threeDMeasurementLogs")) || [];
-
-    setMeasurementLogs(savedMeasurementLogs);
-    setCylinderLogs(savedCylinderLogs);
-    setThreeDMeasurementLogs(savedThreeDLogs);
-
-    setBinedLogs([
-      ...savedMeasurementLogs,
-      ...savedCylinderLogs,
-      ...savedThreeDLogs,
-    ]);
-  }, []); // 初回レンダリング時のみ実行
+  // 両方のログを統合する
+  const binedLogs = [
+    ...measurementLogs,
+    ...cylinderLogs,
+    ...threeDMeasurementLogs,
+  ];
 
   useEffect(() => {
     console.log("Measurement Logs: ", measurementLogs);
@@ -119,100 +105,72 @@ const ThreeDapp = ({
     }
   };
 
-  // 空間の作成関数
+  // 空間を作成
   const createRoom = (width, height, depth) => {
-    // 床のジオメトリとマテリアル
     const floorGeometry = new THREE.PlaneGeometry(width, depth);
-    const floorMaterial = new THREE.MeshBasicMaterial({
-      map: floorTexture || null,
-      color: floorTexture ? null : floorColor,
-      side: THREE.DoubleSide,
-    });
+    const floorMaterial = new THREE.MeshBasicMaterial({ color: floorColor });
     const floor = new THREE.Mesh(floorGeometry, floorMaterial);
     floor.rotation.x = -Math.PI / 2;
-    floor.position.y = 0;
-    floor.name = "floor";
+    floor.position.set(spacePosition.x, 100 + spacePosition.y, spacePosition.z);
     sceneRef.current.add(floor);
 
-    // 背面のジオメトリとマテリアル
     const backWallGeometry = new THREE.PlaneGeometry(width, height);
-    const backMaterial = new THREE.MeshBasicMaterial({
-      map: backTexture || null,
-      color: backTexture ? null : backColor,
+    const backWallMaterial = new THREE.MeshBasicMaterial({
+      color: backColor,
       side: THREE.DoubleSide,
     });
-    const backWall = new THREE.Mesh(backWallGeometry, backMaterial);
-    backWall.position.set(0, height / 2, -depth / 2);
-    backWall.name = "back";
+    const backWall = new THREE.Mesh(backWallGeometry, backWallMaterial);
+    backWall.position.set(
+      spacePosition.x,
+      height / 2 + 100 + spacePosition.y,
+      -depth / 2 + spacePosition.z
+    );
     sceneRef.current.add(backWall);
 
-    // 左側面のジオメトリとマテリアル
     const leftWallGeometry = new THREE.PlaneGeometry(depth, height);
-    const leftMaterial = new THREE.MeshBasicMaterial({
-      map: leftTexture || null,
-      color: leftTexture ? null : leftSideColor,
+    const leftWallMaterial = new THREE.MeshBasicMaterial({
+      color: leftSideColor,
       side: THREE.DoubleSide,
     });
-    const leftWall = new THREE.Mesh(leftWallGeometry, leftMaterial);
+    const leftWall = new THREE.Mesh(leftWallGeometry, leftWallMaterial);
     leftWall.rotation.y = Math.PI / 2;
-    leftWall.position.set(-width / 2, height / 2, 0);
-    leftWall.name = "left";
+    leftWall.position.set(
+      -width / 2 + spacePosition.x,
+      height / 2 + 100 + spacePosition.y,
+      spacePosition.z
+    );
     sceneRef.current.add(leftWall);
 
-    // 右側面のジオメトリとマテリアル
-    const rightWallGeometry = new THREE.PlaneGeometry(depth, height);
-    const rightMaterial = new THREE.MeshBasicMaterial({
-      map: rightTexture || null,
-      color: rightTexture ? null : rightSideColor,
-      side: THREE.DoubleSide,
-    });
-    const rightWall = new THREE.Mesh(rightWallGeometry, rightMaterial);
-    rightWall.rotation.y = -Math.PI / 2;
-    rightWall.position.set(width / 2, height / 2, 0);
-    rightWall.name = "right";
-    sceneRef.current.add(rightWall);
-
-    // 照明を追加
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
-    sceneRef.current.add(ambientLight);
-
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
-    directionalLight.position.set(10, 10, 10);
-    sceneRef.current.add(directionalLight);
-
-    // シーンを再レンダリング
-    rendererRef.current.render(sceneRef.current, cameraRef.current);
-  };
-
-  const handleTextureUpload = (e, target) => {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    const url = URL.createObjectURL(file);
-    const texture = textureLoader.load(url, () => {
-      rendererRef.current.render(sceneRef.current, cameraRef.current);
-    });
-
-    switch (target) {
-      case "floor":
-        setFloorTexture(texture);
-        break;
-      case "back":
-        setBackTexture(texture);
-        break;
-      case "left":
-        setLeftTexture(texture);
-        break;
-      case "right":
-        setRightTexture(texture);
-        break;
-      case "background":
-        setBackgroundTexture(texture);
-        break;
-      default:
-        console.error("Invalid target for texture upload:", target);
-        break;
+    if (!isSingleSided) {
+      const rightWallGeometry = new THREE.PlaneGeometry(depth, height);
+      const rightWallMaterial = new THREE.MeshBasicMaterial({
+        color: rightSideColor,
+        side: THREE.DoubleSide,
+      });
+      const rightWall = new THREE.Mesh(rightWallGeometry, rightWallMaterial);
+      rightWall.rotation.y = -Math.PI / 2;
+      rightWall.position.set(
+        width / 2 + spacePosition.x,
+        height / 2 + 100 + spacePosition.y,
+        spacePosition.z
+      );
+      sceneRef.current.add(rightWall);
     }
+
+    const edgesMaterial = new THREE.LineBasicMaterial({ color: 0x000000 });
+    const floorEdges = new THREE.EdgesGeometry(floorGeometry);
+    const floorLine = new THREE.LineSegments(floorEdges, edgesMaterial);
+    floor.add(floorLine);
+
+    const backEdges = new THREE.EdgesGeometry(backWallGeometry);
+    const backLine = new THREE.LineSegments(backEdges, edgesMaterial);
+    backWall.add(backLine);
+
+    const leftEdges = new THREE.EdgesGeometry(leftWallGeometry);
+    const leftLine = new THREE.LineSegments(leftEdges, edgesMaterial);
+    leftWall.add(leftLine);
+
+    rendererRef.current.render(sceneRef.current, cameraRef.current);
   };
 
   const handleSaveObjects = async () => {
@@ -1441,7 +1399,7 @@ const ThreeDapp = ({
 
     // ローカルストレージの更新
     localStorage.setItem("measurementLogs", JSON.stringify(updatedLogs));
-    setBinedLogs(updatedLogs);
+    setMeasurementLogs(updatedLogs); // UIも更新
   };
 
   const handleObjectCreation = (log) => {
@@ -1493,14 +1451,6 @@ const ThreeDapp = ({
 
     // ここでオブジェクト生成画面を開く
     setActivePanel("objectSize");
-  };
-
-  const updateMaterialColor = (color, target) => {
-    const object = sceneRef.current.getObjectByName(target);
-    if (object && object.material) {
-      object.material.color.set(color);
-      rendererRef.current.render(sceneRef.current, cameraRef.current);
-    }
   };
 
   return (
@@ -1591,158 +1541,81 @@ const ThreeDapp = ({
               </label>
             </div>
             <div className="dimension-group">
-              {/* 床の色/画像 */}
               <label className="color-picker-wrapper">
-                床:
+                床の色:
                 <span
                   className="custom-color-picker-label"
-                  style={{
-                    backgroundImage: floorTexture?.image?.src
-                      ? `url(${floorTexture.image.src})`
-                      : "none",
-                    backgroundColor: floorTexture ? "transparent" : floorColor,
-                  }}
+                  style={{ backgroundColor: floorColor }}
                 >
                   <input
                     type="color"
                     value={floorColor}
                     className="custom-color-picker"
-                    onChange={(e) => {
-                      setFloorColor(e.target.value);
-                      updateMaterialColor(e.target.value, "floor");
-                    }}
+                    onChange={(e) => setFloorColor(e.target.value)}
                   />
                 </span>
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => handleTextureUpload(e, "floor")}
-                />
               </label>
 
-              {/* 背面の色/画像 */}
               <label className="color-picker-wrapper">
-                背面:
+                背面の色:
                 <span
                   className="custom-color-picker-label"
-                  style={{
-                    backgroundImage: backTexture?.image?.src
-                      ? `url(${backTexture.image.src})`
-                      : "none",
-                    backgroundColor: backTexture ? "transparent" : backColor,
-                  }}
+                  style={{ backgroundColor: backColor }}
                 >
                   <input
                     type="color"
                     value={backColor}
                     className="custom-color-picker"
-                    onChange={(e) => {
-                      setBackColor(e.target.value);
-                      updateMaterialColor(e.target.value, "back");
-                    }}
+                    onChange={(e) => setBackColor(e.target.value)}
                   />
                 </span>
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => handleTextureUpload(e, "back")}
-                />
               </label>
 
-              {/* 左側面の色/画像 */}
               <label className="color-picker-wrapper">
-                左側面:
+                左側面の色:
                 <span
                   className="custom-color-picker-label"
-                  style={{
-                    backgroundImage: leftTexture?.image?.src
-                      ? `url(${leftTexture.image.src})`
-                      : "none",
-                    backgroundColor: leftTexture
-                      ? "transparent"
-                      : leftSideColor,
-                  }}
+                  style={{ backgroundColor: leftSideColor }}
                 >
                   <input
                     type="color"
                     value={leftSideColor}
                     className="custom-color-picker"
-                    onChange={(e) => {
-                      setLeftSideColor(e.target.value);
-                      updateMaterialColor(e.target.value, "left");
-                    }}
+                    onChange={(e) => setLeftSideColor(e.target.value)}
                   />
                 </span>
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => handleTextureUpload(e, "left")}
-                />
               </label>
 
-              {/* 右側面の色/画像 */}
               <label className="color-picker-wrapper">
-                右側面:
+                右側面の色:
                 <span
                   className="custom-color-picker-label"
-                  style={{
-                    backgroundImage: rightTexture?.image?.src
-                      ? `url(${rightTexture.image.src})`
-                      : "none",
-                    backgroundColor: rightTexture
-                      ? "transparent"
-                      : rightSideColor,
-                  }}
+                  style={{ backgroundColor: rightSideColor }}
                 >
                   <input
                     type="color"
                     value={rightSideColor}
                     className="custom-color-picker"
-                    onChange={(e) => {
-                      setRightSideColor(e.target.value);
-                      updateMaterialColor(e.target.value, "right");
-                    }}
+                    onChange={(e) => setRightSideColor(e.target.value)}
                   />
                 </span>
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => handleTextureUpload(e, "right")}
-                />
               </label>
 
-              {/* 全体背景の色/画像 */}
               <label className="color-picker-wrapper">
-                全体背景:
+                全体背景の色:
                 <span
                   className="custom-color-picker-label"
-                  style={{
-                    backgroundImage: backgroundTexture?.image?.src
-                      ? `url(${backgroundTexture.image.src})`
-                      : "none",
-                    backgroundColor: backgroundTexture
-                      ? "transparent"
-                      : backgroundColor,
-                  }}
+                  style={{ backgroundColor: backgroundColor }}
                 >
                   <input
                     type="color"
                     value={backgroundColor}
                     className="custom-color-picker"
-                    onChange={(e) => {
-                      setBackgroundColor(e.target.value);
-                      updateMaterialColor(e.target.value, "background");
-                    }}
+                    onChange={(e) => setBackgroundColor(e.target.value)}
                   />
                 </span>
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => handleTextureUpload(e, "background")}
-                />
               </label>
             </div>
-
             <div>
               <button onClick={() => moveSpace("left")}>左</button>
               <button onClick={() => moveSpace("right")}>右</button>
@@ -1953,23 +1826,12 @@ const ThreeDapp = ({
                   log.top_edges;
                 const isPlane = log.result?.max_width && log.result?.max_height;
 
-                // デバッグのために、各フラグの状態を確認
-                console.log(
-                  `Log #${index} - Cylinder: ${isCylinder}, Cube: ${isCube}, Plane: ${isPlane}`,
-                  log
-                );
-
                 // 表示する必要がないデータはスキップ
-                if (!isCube && !isCylinder && !isPlane) {
-                  console.log(`Log #${index} はスキップされました。`);
-                  return null;
-                }
+                if (!isCube && !isCylinder && !isPlane) return null;
 
-                const parseMeasurement = (value) => {
-                  return typeof value === "string"
-                    ? value.replace("cm", "")
-                    : value;
-                };
+                // サイズの単位（cm）を取り除く関数
+                const parseMeasurement = (value) =>
+                  typeof value === "string" ? value.replace("cm", "") : value;
 
                 return (
                   <li key={index}>
@@ -1999,18 +1861,13 @@ const ThreeDapp = ({
                         <p>横幅: {parseMeasurement(log.top_horizontal)} cm</p>
                         <p>奥行き: {parseMeasurement(log.top_vertical)} cm</p>
                         <p>高さ: {parseMeasurement(log.side_height)} cm</p>
-                        <p>
-                          上辺: {parseMeasurement(log.top_edges.top_edge)} cm
-                        </p>
-                        <p>
-                          右辺: {parseMeasurement(log.top_edges.right_edge)} cm
-                        </p>
-                        <p>
-                          下辺: {parseMeasurement(log.top_edges.bottom_edge)} cm
-                        </p>
-                        <p>
-                          左辺: {parseMeasurement(log.top_edges.left_edge)} cm
-                        </p>
+                        {Object.entries(log.top_edges).map(
+                          ([edgeName, edgeValue]) => (
+                            <p key={edgeName}>
+                              {edgeName}: {parseMeasurement(edgeValue)} cm
+                            </p>
+                          )
+                        )}
                         <button
                           onClick={() => handleObjectCreation(log)}
                           className="create-object-button"
